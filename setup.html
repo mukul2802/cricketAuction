@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Bidding System - Setup</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 { color: #10b981; }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover { background: #059669; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .warning { background: #fef3c7; color: #92400e; }
+        pre {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏏 Cricket Bidding System Setup</h1>
+        <p>This page helps you initialize your Firebase database with sample data.</p>
+        
+        <div class="status info">
+            <strong>Prerequisites:</strong>
+            <ul>
+                <li>Firebase project created and configured</li>
+                <li>Firestore Database enabled</li>
+                <li>Authentication enabled (Email/Password)</li>
+                <li>Firebase config updated in <code>/lib/firebase.ts</code></li>
+            </ul>
+        </div>
+
+        <h2>Step 1: Create Admin User</h2>
+        <p>This creates the initial admin user with credentials:</p>
+        <pre>Email: admin@cricket.com
+Password: admin123</pre>
+        <button onclick="createAdminUser()" id="adminBtn">Create Admin User</button>
+        <div id="adminStatus"></div>
+
+        <h2>Step 2: Setup Sample Data</h2>
+        <p>This creates sample teams and players in your database.</p>
+        <button onclick="setupSampleData()" id="dataBtn">Setup Sample Data</button>
+        <div id="dataStatus"></div>
+
+        <h2>Step 3: Verify Setup</h2>
+        <button onclick="verifySetup()" id="verifyBtn">Verify Database</button>
+        <div id="verifyStatus"></div>
+
+        <hr style="margin: 30px 0;">
+        
+        <h2>Manual Setup (Alternative)</h2>
+        <p>If the buttons above don't work, you can run this code in your browser console on the main app:</p>
+        <pre><code>// Import the setup functions
+import { setupFirebaseData, createInitialAdminUser } from './lib/setupFirebaseData';
+
+// Create admin user
+await createInitialAdminUser();
+
+// Setup sample data  
+await setupFirebaseData();
+
+console.log('Setup complete!');</code></pre>
+    </div>
+
+    <script type="module">
+        // Note: This would need to be adapted based on your build system
+        // For now, this is a reference implementation
+        
+        async function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        window.createAdminUser = async function() {
+            const btn = document.getElementById('adminBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            
+            try {
+                showStatus('adminStatus', 'Creating admin user...', 'info');
+                
+                // You would need to import and call the actual Firebase functions here
+                // This is just a template
+                showStatus('adminStatus', '⚠️ Please run the manual setup code in your browser console on the main app', 'warning');
+                
+            } catch (error) {
+                showStatus('adminStatus', `Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Admin User';
+            }
+        };
+
+        window.setupSampleData = async function() {
+            const btn = document.getElementById('dataBtn');
+            btn.disabled = true;
+            btn.textContent = 'Setting up...';
+            
+            try {
+                showStatus('dataStatus', 'Setting up sample data...', 'info');
+                showStatus('dataStatus', '⚠️ Please run the manual setup code in your browser console on the main app', 'warning');
+                
+            } catch (error) {
+                showStatus('dataStatus', `Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Setup Sample Data';
+            }
+        };
+
+        window.verifySetup = async function() {
+            showStatus('verifyStatus', '⚠️ Please check your Firebase console to verify the data was created', 'warning');
+        };
+
+        // Show initial instructions
+        showStatus('adminStatus', 'Ready to create admin user', 'info');
+        showStatus('dataStatus', 'Ready to setup sample data', 'info');
+        showStatus('verifyStatus', 'Ready to verify setup', 'info');
+    </script>
+</body>
+</html>
