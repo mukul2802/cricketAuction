@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { Trophy, Shield, Users } from 'lucide-react';
-import { createInitialAdminUser, setupFirebaseData } from '@/lib/setupFirebaseData';
+import { useAuth } from '../../../contexts/AuthContext';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Eye, EyeOff, Trophy, Shield } from 'lucide-react';
+import { authApi } from '../../api';
+import { DEMO_ACCOUNTS, ERROR_MESSAGES } from '../../constants';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -23,25 +23,31 @@ export function LoginPage() {
     try {
       const success = await login(email, password);
       if (!success) {
-        setError('Invalid credentials. Please try again.');
+        setError(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(ERROR_MESSAGES.LOGIN_FAILED);
     } finally {
       setLoading(false);
     }
   };
 
-  const demoAccounts = [
-    { role: 'Admin', email: 'admin@cricket.com', icon: Shield },
-  ];
-
   const createAdmin = async () => {
-await createInitialAdminUser();
-
-// Setup sample teams and players (run once)
-// await setupFirebaseData();
-  }
+    try {
+      // Create initial admin user using the auth API
+      await authApi.createUser(
+        DEMO_ACCOUNTS.ADMIN.email,
+        DEMO_ACCOUNTS.ADMIN.password,
+        {
+          name: 'Admin User',
+          role: 'admin',
+          email: DEMO_ACCOUNTS.ADMIN.email
+        }
+      );
+    } catch (error) {
+      console.error('Error creating admin:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-slate-900 to-emerald-900/20 p-4">
@@ -111,7 +117,7 @@ await createInitialAdminUser();
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
                   window.open('?display=auction', '_blank');
                 }}
@@ -132,30 +138,27 @@ await createInitialAdminUser();
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {demoAccounts.map((account) => (
-              <Button
-                key={account.role}
-                variant="outline"
-                className="w-full justify-start gap-3"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setEmail(account.email);
-                  setPassword('admin123');
-                }}
-              >
-                <account.icon className="w-4 h-4" />
-                <span>{account.role}</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {account.email}
-                </span>
-              </Button>
-            ))}
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                setEmail(DEMO_ACCOUNTS.ADMIN.email);
+                setPassword(DEMO_ACCOUNTS.ADMIN.password);
+              }}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {DEMO_ACCOUNTS.ADMIN.email}
+              </span>
+            </Button>
           </CardContent>
           <CardFooter>
             <Button 
               variant="link" 
               className="w-full justify-center"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
                 createAdmin();
               }}

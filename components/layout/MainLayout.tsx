@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { PageType } from '../Router';
+import { PageType } from '../../src/components/Router';
 import {
   Trophy,
   Users,
@@ -117,9 +117,9 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
                 </Badge>
               </div>
             </div>
-            {user?.teamName && (
+            {user?.teamId && (
               <div className="mt-2 text-sm text-muted-foreground">
-                Team: {user.teamName}
+                Team ID: {user.teamId}
               </div>
             )}
           </div>

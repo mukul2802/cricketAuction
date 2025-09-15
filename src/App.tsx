@@ -1,8 +1,8 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from '../contexts/AuthContext';
 import { Router } from './components/Router';
-import { Toaster } from './components/ui/sonner';
-import './styles/globals.css';
+import { Toaster } from '../components/ui/sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 function AppContent() {
   const { loading } = useAuth();
