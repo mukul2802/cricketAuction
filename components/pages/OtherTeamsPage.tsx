@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { PageType } from '../Router';
+import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { teamService, playerService, Team, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
@@ -27,7 +27,8 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
   const { user, teams } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTeam, setFilterTeam] = useState('all');
-  const [teamsData, setTeamsData] = useState<(Team & { players: Player[]; playersCount: number })[]>([]);
+  const [teamsData, setTeamsData] = useState<Team[]>([]);
+  const [playersData, setPlayersData] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load teams and their players from Firebase
@@ -38,20 +39,8 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
         const allTeams = await teamService.getAllTeams();
         const allPlayers = await playerService.getAllPlayers();
         
-        // Group players by team and only include sold players
-        const teamsWithPlayers = allTeams.map(team => {
-          const teamPlayers = allPlayers.filter(player => 
-            player.teamId === team.id && player.status === 'sold'
-          );
-          
-          return {
-            ...team,
-            players: teamPlayers,
-            playersCount: teamPlayers.length
-          };
-        });
-        
-        setTeamsData(teamsWithPlayers as (Team & { players: Player[]; playersCount: number })[]);
+        setTeamsData(allTeams);
+        setPlayersData(allPlayers.filter(player => player.status === 'sold'));
       } catch (error) {
         console.error('Error loading teams data:', error);
         toast.error('Failed to load teams data');
@@ -81,8 +70,12 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
   const otherTeams = teamsData.filter(team => team.id !== user?.teamId);
 
   const filteredTeams = otherTeams.filter(team => {
+    const teamPlayers = playersData.filter(player => 
+      team.players && team.players.includes(player.id)
+    );
+    
     const matchesSearch = team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         team.players.some(player => 
+                         teamPlayers.some(player => 
                            player.name.toLowerCase().includes(searchQuery.toLowerCase())
                          );
     const matchesFilter = filterTeam === 'all' || team.name === filterTeam;
@@ -188,7 +181,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                 {/* Team Stats */}
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   <div className="text-center">
-                    <div className="text-lg font-bold">{team.players.length}</div>
+                    <div className="text-lg font-bold">{playersData.filter(p => team.players && team.players.includes(p.id)).length}</div>
                     <div className="text-xs text-muted-foreground">Players</div>
                   </div>
                   <div className="text-center">
@@ -215,16 +208,18 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Key Players ({team.players.length})
+                    Key Players ({playersData.filter(p => team.players && team.players.includes(p.id)).length})
                   </h4>
                   
-                  {team.players.map((player) => (
-                    <div key={player.id} className="flex items-center justify-between">
+                  {playersData
+                    .filter(player => team.players && team.players.includes(player.id))
+                    .map((player) => (
+                    <div key={player.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <ImageWithFallback
                           src={player.image || ''}
                           alt={player.name}
-                          className="w-8 h-8 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           <p className="font-medium text-sm">{player.name}</p>
@@ -232,10 +227,6 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                             <Badge variant="outline" className={`text-xs ${getRoleColor(player.role)}`}>
                               {player.role}
                             </Badge>
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs">{(player as any).rating || 'N/A'}</span>
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -247,7 +238,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                     </div>
                   ))}
                   
-                  {team.players.length === 0 && (
+                  {playersData.filter(p => team.players && team.players.includes(p.id)).length === 0 && (
                     <div className="text-center py-4">
                       <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">No players in this team yet</p>

@@ -511,7 +511,8 @@ export const playerService = {
       
       await batch.commit();
       
-      // Note: Players remain in target lists even when sold to allow teams to track their targets
+      // Remove player from all target lists when sold
+      await targetPlayerService.removeTargetPlayerWhenSold(playerId);
     } catch (error) {
       console.error('Sell player error:', error);
       throw error;

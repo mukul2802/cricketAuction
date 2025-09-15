@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { PageType } from '../Router';
+import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { playerService, Player, targetPlayerService, TargetPlayer, auctionService, AuctionRound } from '../../lib/firebaseServices';
@@ -76,7 +76,6 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
   // Memoize team stats to prevent recalculation on every render
   const teamStats = useMemo(() => ({
     totalSpent: myPlayers.reduce((sum, player) => sum + (player.finalPrice || 0), 0),
-    averageRating: myPlayers.reduce((sum, player) => sum + (((player.battingAvg || 0) + (player.bowlingAvg || 0)) / 20 || 7.5), 0) / myPlayers.length || 0,
     totalRuns: myPlayers.reduce((sum, player) => sum + (player.runs || 0), 0),
     totalWickets: myPlayers.reduce((sum, player) => sum + (player.wickets || 0), 0)
   }), [myPlayers]);
@@ -191,18 +190,7 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Team Rating</CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{teamStats.averageRating.toFixed(1)}</div>
-              <p className="text-xs text-muted-foreground">
-                Average player rating
-              </p>
-            </CardContent>
-          </Card>
+
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

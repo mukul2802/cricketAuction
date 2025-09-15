@@ -11,7 +11,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { PlayerForm } from '../ui/player-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-import { PageType } from '../Router';
+import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { playerService, Player, targetPlayerService } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
@@ -297,6 +297,13 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
       return;
     }
 
+    const player = players.find(p => p.id === playerId);
+    
+    if (!player) {
+      toast.error('Player not found');
+      return;
+    }
+
     try {
       if (targetPlayers.includes(playerId)) {
         // Remove from target players
@@ -304,6 +311,17 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
         setTargetPlayers(targetPlayers.filter(id => id !== playerId));
         toast.success('Player removed from target list');
       } else {
+        // Check if player is eligible to be added (only active/unsold players)
+        if (player.status === 'sold') {
+          toast.error('Cannot add sold players to target list');
+          return;
+        }
+        
+        if (player.status !== 'active' && player.status !== 'unsold') {
+          toast.error('Only active or unsold players can be added to target list');
+          return;
+        }
+        
         // Add to target players with medium priority by default
         await targetPlayerService.addTargetPlayer(teamId, playerId, 'medium');
         setTargetPlayers([...targetPlayers, playerId]);
@@ -476,10 +494,6 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm">
-                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                            {(player as any).rating || 'N/A'}
-                          </div>
                           <div className="text-xs text-muted-foreground">
                             {player.matches || 0} matches
                           </div>
