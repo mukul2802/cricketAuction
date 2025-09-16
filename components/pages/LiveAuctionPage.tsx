@@ -109,7 +109,11 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         // Get eligible players for the new round
         const eligiblePlayers = await auctionService.getEligiblePlayersForRound(newRound.round);
         setPlayers(eligiblePlayers);
+        // Direct atomic updates to prevent flicker
         setCurrentPlayerIndex(0);
+        if (eligiblePlayers.length > 0) {
+          setStableCurrentPlayer(eligiblePlayers[0]);
+        }
         
         toast.success(`New round started with ${eligiblePlayers.length} players`);
         
@@ -207,15 +211,22 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
             const playerIndex = eligiblePlayers.findIndex(p => p.id === round.currentPlayerId);
             if (playerIndex !== -1) {
               setCurrentPlayerIndex(playerIndex);
+              setStableCurrentPlayer(eligiblePlayers[playerIndex]);
             } else {
               // If current player not found, start from beginning
               setCurrentPlayerIndex(0);
+              if (eligiblePlayers.length > 0) {
+                setStableCurrentPlayer(eligiblePlayers[0]);
+              }
             }
           } else {
             // Auction not started yet or waiting for admin confirmation
             console.log('⏸️ Auction not active, waiting for admin confirmation');
             setAuctionStarted(false);
             setCurrentPlayerIndex(0);
+            if (eligiblePlayers.length > 0) {
+              setStableCurrentPlayer(eligiblePlayers[0]);
+            }
           }
         }
         
@@ -271,7 +282,11 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
       });
       
       setAuctionStarted(true);
+      // Direct atomic updates to prevent flicker
       setCurrentPlayerIndex(0);
+      if (players.length > 0) {
+        setStableCurrentPlayer(players[0]);
+      }
       toast.success('Auction started!');
       
       console.log('🎉 Auction started successfully');
@@ -315,16 +330,19 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           
           setPlayers(freshPlayers);
           
-          // Set current player index based on currentPlayerId
+          // Set current player index based on currentPlayerId - direct atomic updates
           if (round.currentPlayerId) {
             const playerIndex = freshPlayers.findIndex(p => p.id === round.currentPlayerId);
             if (playerIndex !== -1) {
               setCurrentPlayerIndex(playerIndex);
+              setStableCurrentPlayer(freshPlayers[playerIndex]);
             } else {
               setCurrentPlayerIndex(0);
+              setStableCurrentPlayer(freshPlayers[0] || null);
             }
           } else {
              setCurrentPlayerIndex(0);
+             setStableCurrentPlayer(freshPlayers[0] || null);
            }
            
            // Check auction status after significant changes to ensure UI consistency
@@ -333,14 +351,12 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
            console.error('Error reloading players after auction update:', error);
          }
        } else if (round && round.currentPlayerId) {
-        // Only update player index if currentPlayerId changed
-        setCurrentPlayerIndex(prevIndex => {
-          const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
-          if (playerIndex !== -1 && playerIndex !== prevIndex) {
-            return playerIndex;
-          }
-          return prevIndex;
-        });
+        // Only update player index if currentPlayerId changed - direct atomic updates
+        const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
+        if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
+          setCurrentPlayerIndex(playerIndex);
+          setStableCurrentPlayer(players[playerIndex]);
+        }
       }
     }, [currentRound, players]);
 
@@ -377,11 +393,12 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
             return freshPlayers;
           });
           
-          // Update current player index if current player is still valid
+          // Update current player index if current player is still valid - atomic updates
           if (currentRound.currentPlayerId) {
             const newPlayerIndex = freshPlayers.findIndex(p => p.id === currentRound.currentPlayerId);
             if (newPlayerIndex !== -1) {
               setCurrentPlayerIndex(newPlayerIndex);
+              setStableCurrentPlayer(freshPlayers[newPlayerIndex]);
             }
           }
         }
@@ -390,22 +407,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
       }
     }, [currentRound, players]);
 
-    useEffect(() => {
-      mountedRef.current = true;
-      loadData();
-    
-      // Subscribe to auction updates with enhanced real-time synchronization
-      const unsubscribe = auctionService.subscribeToAuctionUpdates(handleAuctionUpdate);
-      
-      // Subscribe to player updates for real-time status changes
-      const playerUnsubscribe = playerService.subscribeToPlayers(handlePlayerUpdate);
-      
-      return () => {
-        mountedRef.current = false;
-        if (unsubscribe) unsubscribe();
-        if (playerUnsubscribe) playerUnsubscribe();
-    };
-  }, []); // Remove circular dependencies
+    // Removed duplicate subscription - using consolidated subscription below
   
   // Consolidated subscription and data loading effect
   useEffect(() => {
@@ -443,14 +445,20 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                  const eligiblePlayers = await auctionService.getEligiblePlayersForRound(round.round);
                  if (!mounted) return;
                  
+                 // Update players and current player atomically to prevent flicker
                  setPlayers(eligiblePlayers);
                  
                  // Set current player index based on currentPlayerId
-                 if (round.currentPlayerId) {
-                   const playerIndex = eligiblePlayers.findIndex(p => p.id === round.currentPlayerId);
-                   setCurrentPlayerIndex(playerIndex !== -1 ? playerIndex : 0);
-                 } else {
-                   setCurrentPlayerIndex(0);
+                 const targetIndex = round.currentPlayerId 
+                   ? eligiblePlayers.findIndex(p => p.id === round.currentPlayerId)
+                   : 0;
+                 const finalIndex = targetIndex !== -1 ? targetIndex : 0;
+                 
+                 // Update both index and stable player with the new players list
+                 setCurrentPlayerIndex(finalIndex);
+                 const targetPlayer = eligiblePlayers[finalIndex];
+                 if (targetPlayer) {
+                   setStableCurrentPlayer(targetPlayer);
                  }
                  
                  // Update auction started state
@@ -462,11 +470,31 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                  console.error('Error loading players after auction update:', error);
                }
              } else if (round.currentPlayerId && players.length > 0) {
-               // Update player index if currentPlayerId changed
-               const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
-               if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
-                 setCurrentPlayerIndex(playerIndex);
-               }
+               // Update player index if currentPlayerId changed - use fresh data to prevent race conditions
+               try {
+                 const freshPlayers = await auctionService.getEligiblePlayersForRound(round.round);
+                 const playerIndex = freshPlayers.findIndex(p => p.id === round.currentPlayerId);
+                 if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
+                   // Atomic update to prevent flicker using fresh data
+                   setPlayers(freshPlayers);
+                   setCurrentPlayerIndex(playerIndex);
+                   const targetPlayer = freshPlayers[playerIndex];
+                   if (targetPlayer) {
+                     setStableCurrentPlayer(targetPlayer);
+                   }
+                 }
+               } catch (error) {
+                 console.error('Error getting fresh player data:', error);
+                 // Fallback to existing logic with stale data
+                  const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
+                  if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
+                    setCurrentPlayerIndex(playerIndex);
+                    const targetPlayer = players[playerIndex];
+                    if (targetPlayer) {
+                      setStableCurrentPlayer(targetPlayer);
+                    }
+                  }
+                }
              }
            } else {
              setCurrentRound(null);
@@ -515,7 +543,41 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
   // Use real players data instead of mock data
   // For current round, show players that are eligible for this round
   const activeRoundPlayers = players;
-  const currentPlayer: Player | undefined = activeRoundPlayers[currentPlayerIndex];
+  
+  // Use state for currentPlayer to prevent flicker during transitions
+  const [stableCurrentPlayer, setStableCurrentPlayer] = useState<Player | null>(null);
+  
+  // Removed updateCurrentPlayer function - now using atomic state updates to prevent flicker
+  
+  // Initialize stableCurrentPlayer when players load - only run when players change
+  useEffect(() => {
+    if (activeRoundPlayers.length > 0) {
+      const initialPlayer = activeRoundPlayers[currentPlayerIndex] || activeRoundPlayers[0];
+      if (initialPlayer && (!stableCurrentPlayer || stableCurrentPlayer.id !== initialPlayer.id)) {
+        setStableCurrentPlayer(initialPlayer);
+      }
+    }
+  }, [activeRoundPlayers, currentPlayerIndex]);
+  
+  // Add transition state to prevent flicker during player changes
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Track when currentPlayerId changes to manage transitions
+  useEffect(() => {
+    if (currentRound?.currentPlayerId && stableCurrentPlayer && 
+        currentRound.currentPlayerId !== stableCurrentPlayer.id) {
+      setIsTransitioning(true);
+      // Clear transition state after a brief delay to allow smooth transition
+      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentRound?.currentPlayerId, stableCurrentPlayer?.id]);
+  
+  // Only show current player if not transitioning or if it matches the expected player
+  const currentPlayer: Player | undefined = 
+    isTransitioning && currentRound?.currentPlayerId !== stableCurrentPlayer?.id 
+      ? undefined 
+      : stableCurrentPlayer || undefined;
   
   // Debug logging for round number display
   console.log('🔍 LiveAuctionPage render state:', {
@@ -543,8 +605,21 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
   // If no current player, show loading or no player state
   if (!currentPlayer && !loading) {
     const isAuctionCompleted = currentRound?.status === 'completed';
+    const isWaitingForAdmin = currentRound?.status === 'waiting_for_admin';
     const isAuctionNotStarted = currentRound && !auctionStarted && players.length > 0;
     const isAuctionNotLive = !currentRound || currentRound.status === 'pending';
+    
+    // If we're transitioning between players, show a brief loading state
+    if (isTransitioning) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white text-lg">Loading next player...</p>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
@@ -553,12 +628,17 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
             <Trophy className="w-16 h-16 text-primary mx-auto mb-6" />
             <h2 className="text-2xl font-bold mb-4 text-white">
               {isAuctionCompleted ? 'Auction Completed!' : 
+               isWaitingForAdmin ? (user?.role === 'admin' ? 'Round Complete - Start Next Round' : 'Waiting for Next Round') :
                isAuctionNotStarted ? 'Auction Ready to Start' : 
                isAuctionNotLive ? 'No Auction Going On' : 'No Player Available'}
             </h2>
             <p className="text-gray-300 mb-6">
               {isAuctionCompleted 
                 ? 'Thank you for participating! The auction has been completed successfully. Redirecting to dashboard...' 
+                : isWaitingForAdmin
+                ? (user?.role === 'admin' 
+                  ? 'The current round is complete. You can start the next round or end the auction.' 
+                  : 'Waiting for admin to start the next round. Please wait...')
                 : isAuctionNotStarted
                 ? `Ready to start auction with ${players.length} players. Admin can start the auction.`
                 : isAuctionNotLive
@@ -581,9 +661,29 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                 </Button>
               )}
               
+              {isWaitingForAdmin && user?.role === 'admin' && (
+                <>
+                  <Button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleStartNextRound();
+                    }} 
+                    disabled={isProcessing}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    {isProcessing ? 'Starting...' : 'Start Next Round'}
+                  </Button>
+                  <Button variant="outline" onClick={(e) => {
+                    e.preventDefault();
+                    handleEndAuction();
+                  }} className="w-full border-red-600 text-red-400 hover:bg-red-600 hover:text-white">
+                    End Auction
+                  </Button>
+                </>
+              )}
 
-              
-              {!isAuctionCompleted && !isAuctionNotStarted && auctionStarted && user?.role === 'admin' && (
+              {!isAuctionCompleted && !isAuctionNotStarted && !isWaitingForAdmin && auctionStarted && user?.role === 'admin' && (
                 <Button variant="outline" onClick={(e) => {
                   e.preventDefault();
                   handleEndAuction();
@@ -843,28 +943,22 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           remainingPlayers: remainingPlayers.map(p => ({ name: p.name, status: p.status }))
         });
         
-        // Update players state with fresh data
-        setPlayers(freshPlayers);
+        // Let subscription handle player state updates to prevent race conditions
         
         if (remainingPlayers.length > 0) {
-          // Find next eligible player from fresh data
-          const nextPlayer = remainingPlayers[0]; // Get the first remaining player
-          const nextPlayerIndex = players.findIndex(p => p.id === nextPlayer.id);
+          // Get the first remaining player directly from fresh data
+          const nextPlayer = remainingPlayers[0];
           
-          if (nextPlayerIndex !== -1) {
-            setCurrentPlayerIndex(nextPlayerIndex);
-            
-            // Update current player in auction round
-            if (currentRound && nextPlayer) {
-              try {
-                await auctionService.updateAuctionRound(currentRound.id, {
-                  currentPlayerId: nextPlayer.id,
-                  playersLeft: remainingPlayers.length
-                });
-              } catch (error) {
-                console.error('Error updating current player:', error);
-                toast.error('Failed to update current player');
-              }
+          // Only update Firebase - let subscription handle UI updates to prevent flicker
+          if (currentRound && nextPlayer) {
+            try {
+              await auctionService.updateAuctionRound(currentRound.id, {
+                currentPlayerId: nextPlayer.id,
+                playersLeft: remainingPlayers.length
+              });
+            } catch (error) {
+              console.error('Error updating current player:', error);
+              toast.error('Failed to update current player');
             }
           }
         } else {
@@ -943,30 +1037,22 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         remainingPlayers: remainingPlayers.map(p => ({ name: p.name, status: p.status }))
       });
       
-      // Update players state with fresh data (avoid flickering by only updating if different)
-      if (JSON.stringify(freshPlayers.map(p => p.id)) !== JSON.stringify(players.map(p => p.id))) {
-        setPlayers(freshPlayers);
-      }
+      // Let subscription handle player state updates to prevent race conditions
       
       if (remainingPlayers.length > 0) {
-        // Find next eligible player from fresh data
-        const nextPlayer = remainingPlayers[0]; // Get the first remaining player
-        const nextPlayerIndex = players.findIndex(p => p.id === nextPlayer.id);
+        // Get the first remaining player directly from fresh data
+        const nextPlayer = remainingPlayers[0];
         
-        if (nextPlayerIndex !== -1) {
-          setCurrentPlayerIndex(nextPlayerIndex);
-          
-          // Update current player in auction round
-          if (currentRound && nextPlayer) {
-            try {
-              await auctionService.updateAuctionRound(currentRound.id, {
-                currentPlayerId: nextPlayer.id,
-                playersLeft: remainingPlayers.length
-              });
-            } catch (error) {
-              console.error('Error updating current player:', error);
-              toast.error('Failed to update current player');
-            }
+        // Only update Firebase - let subscription handle UI updates to prevent flicker
+        if (currentRound && nextPlayer) {
+          try {
+            await auctionService.updateAuctionRound(currentRound.id, {
+              currentPlayerId: nextPlayer.id,
+              playersLeft: remainingPlayers.length
+            });
+          } catch (error) {
+            console.error('Error updating current player:', error);
+            toast.error('Failed to update current player');
           }
         }
       } else {
@@ -1012,44 +1098,19 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     });
     
     if (remainingPlayers.length > 0) {
-      // Find next eligible player
-      const nextPlayerInArray = activeRoundPlayers.find(p => 
-        remainingPlayers.some(rp => rp.id === p.id)
-      );
+      // Get the first remaining player directly from fresh data
+      const nextPlayer = remainingPlayers[0];
       
-      if (nextPlayerInArray) {
-        const nextPlayerIndex = activeRoundPlayers.findIndex(p => p.id === nextPlayerInArray.id);
-        setCurrentPlayerIndex(nextPlayerIndex);
-        
-        // Update current player in auction round
-        if (currentRound) {
-          try {
-            await auctionService.updateAuctionRound(currentRound.id, {
-              currentPlayerId: nextPlayerInArray.id,
-              playersLeft: remainingPlayers.length
-            });
-          } catch (error) {
-            console.error('Error updating current player:', error);
-            toast.error('Failed to update current player');
-          }
-        }
-      } else {
-        // Fallback: move to next index if available
-        if (currentPlayerIndex + 1 < activeRoundPlayers.length) {
-          const nextPlayer = activeRoundPlayers[currentPlayerIndex + 1];
-          setCurrentPlayerIndex(currentPlayerIndex + 1);
-          
-          if (currentRound && nextPlayer) {
-            try {
-              await auctionService.updateAuctionRound(currentRound.id, {
-                currentPlayerId: nextPlayer.id,
-                playersLeft: remainingPlayers.length
-              });
-            } catch (error) {
-              console.error('Error updating current player:', error);
-              toast.error('Failed to update current player');
-            }
-          }
+      // Only update Firebase - let subscription handle UI updates to prevent flicker
+      if (currentRound && nextPlayer) {
+        try {
+          await auctionService.updateAuctionRound(currentRound.id, {
+            currentPlayerId: nextPlayer.id,
+            playersLeft: remainingPlayers.length
+          });
+        } catch (error) {
+          console.error('Error updating current player:', error);
+          toast.error('Failed to update current player');
         }
       }
     } else {
