@@ -3,7 +3,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { authService, userService, teamService, User as AppUser, Team } from '../lib/firebaseServices';
 
-export type UserRole = 'admin' | 'manager' | 'owner';
+export type UserRole = 'admin' | 'owner';
 
 export interface User extends AppUser {}
 
@@ -55,6 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Subscribe to real-time team updates
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = teamService.subscribeToTeams((teamsData) => {
+        console.log('AuthContext: Teams updated via subscription:', teamsData.length);
+        setTeams(teamsData);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {

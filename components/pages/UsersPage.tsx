@@ -8,7 +8,8 @@ import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { PageType } from '../Router';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService, authService, User as AppUser } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
@@ -39,6 +40,8 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
 
   useEffect(() => {
     loadUsers();
@@ -92,11 +95,52 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
     })();
   };
 
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    
+    try {
+      await userService.updateUser(editingUser.id, {
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role as any
+      });
+      
+      toast.success('User updated successfully');
+      setEditingUser(null);
+      await loadUsers();
+    } catch (error) {
+      toast.error('Failed to update user');
+    }
+  };
+
+  const handleDeleteUser = async (userToDelete: AppUser) => {
+    if (userToDelete.id === user?.id) {
+      toast.error('You cannot delete yourself');
+      return;
+    }
+
+    try {
+      await userService.deleteUser(userToDelete.id);
+      toast.success('User deleted successfully');
+      await loadUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
+  };
+
+  const openEditDialog = (userToEdit: AppUser) => {
+    setEditingUser(userToEdit);
+    setEditForm({
+      name: userToEdit.name,
+      email: userToEdit.email,
+      role: userToEdit.role
+    });
+  };
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-500/10 text-red-400 border-red-500/20';
       case 'owner': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'manager': return 'bg-green-500/10 text-green-400 border-green-500/20';
       default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     }
   };
@@ -105,7 +149,6 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
     switch (role) {
       case 'admin': return Shield;
       case 'owner': return Trophy;
-      case 'manager': return Users;
       default: return Users;
     }
   };
@@ -129,7 +172,7 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
               <DialogHeader>
                 <DialogTitle>Add New User</DialogTitle>
                 <DialogDescription>
-                  Create a new user account. Note: Owners cannot be managers or admins, and admins cannot be players.
+                  Create a new user account. Note: Owners cannot be admins, and admins cannot be players.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -173,7 +216,6 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="owner">Team Owner</SelectItem>
                     </SelectContent>
                   </Select>
@@ -204,7 +246,7 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
           <CardHeader>
             <CardTitle>System Users</CardTitle>
             <CardDescription>
-              Manage user accounts and roles. Note: Team owners cannot have manager or admin roles, and admins cannot be players.
+              Manage user accounts and roles. Note: Team owners cannot have admin roles, and admins cannot be players.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -262,15 +304,38 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center gap-1 justify-end">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {user.name}? This action cannot be undone.
+                                  {user.role === 'owner' && user.teamId && (
+                                    <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-400">
+                                      <strong>Warning:</strong> This user is a team owner. Deleting them will also delete their team and reset all sold players to active status.
+                                    </div>
+                                  )}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteUser(user)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete User
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -282,12 +347,59 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
           </CardContent>
         </Card>
 
-        <Dialog open={false}>
+        {/* Edit User Dialog */}
+        <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Change Password</DialogTitle>
-              <DialogDescription>Coming soon.</DialogDescription>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user information and role.
+              </DialogDescription>
             </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Role</Label>
+                <Select value={editForm.role} onValueChange={(value) => setEditForm({...editForm, role: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="owner">Team Owner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingUser(null)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleEditUser}
+                  disabled={!editForm.name || !editForm.email || !editForm.role}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

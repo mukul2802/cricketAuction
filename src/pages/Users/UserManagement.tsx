@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { useAuth, useTeams } from '@/hooks';
 import { authApi } from '@/api/auth';
@@ -39,6 +40,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -85,7 +87,6 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case 'admin': return 'destructive';
-      case 'manager': return 'default';
       case 'owner': return 'secondary';
       default: return 'outline';
     }
@@ -95,7 +96,6 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case 'admin': return Crown;
-      case 'manager': return Shield;
       case 'owner': return Star;
       default: return UserCheck;
     }
@@ -131,28 +131,38 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     if (!editingUser) return;
     
     try {
-      // Note: In a real app, you'd need a proper user update API
-      // For now, we'll just reload the users
+      await authApi.updateUser(editingUser.id, {
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+        teamId: editingUser.teamId
+      });
+      
       setEditingUser(null);
       loadUsers();
     } catch (error) {
       console.error('Error updating user:', error);
+      alert('Failed to update user. Please try again.');
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (userId === currentUser?.id) {
+  const handleDeleteUser = async (userToDelete: User) => {
+    if (isDeleting) return;
+    
+    if (userToDelete.id === currentUser?.id) {
       alert('You cannot delete your own account');
       return;
     }
     
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        // Note: In a real app, you'd need a proper user deletion API
-        loadUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
+    try {
+      setIsDeleting(true);
+      await authApi.deleteUser(userToDelete.id);
+      loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -226,7 +236,6 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="owner">Owner</SelectItem>
                     </SelectContent>
                   </Select>
@@ -284,16 +293,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Managers</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'manager').length}</div>
-              <p className="text-xs text-muted-foreground">Team managers</p>
-            </CardContent>
-          </Card>
+
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -335,7 +335,6 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
                 </SelectContent>
               </Select>
@@ -399,13 +398,46 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                             <Edit className="w-3 h-3" />
                           </Button>
                           {user.id !== currentUser?.id && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete {user.name}?
+                                    {user.role === 'owner' && user.teamId && (
+                                      <div className="mt-2 p-2 bg-destructive/10 rounded border border-destructive/20">
+                                        <strong>Warning:</strong> This user is a team owner. Deleting them will also:
+                                        <ul className="list-disc list-inside mt-1 text-sm">
+                                          <li>Delete their team</li>
+                                          <li>Release all players back to active status for the next auction</li>
+                                        </ul>
+                                      </div>
+                                    )}
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(user)}
+                                    disabled={isDeleting}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {isDeleting ? 'Deleting...' : 'Delete User'}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
                           )}
                         </div>
                       </div>
@@ -489,7 +521,6 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="owner">Owner</SelectItem>
                     </SelectContent>
                   </Select>

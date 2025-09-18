@@ -3,13 +3,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'manager' | 'owner';
+  role: 'admin' | 'owner';
   teamId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type UserRole = 'admin' | 'manager' | 'owner';
+export type UserRole = 'admin' | 'owner';
 
 // Team Types
 export interface Team {

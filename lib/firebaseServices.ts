@@ -28,7 +28,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'manager' | 'owner';
+  role: 'admin' | 'owner';
   teamId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -682,9 +682,15 @@ export const auctionService = {
         console.log(`🔍 Round ${roundNumber} - Active/Pending players:`, eligiblePlayers.length);
       }
       
-      // Randomize player order for each round using Fisher-Yates shuffle
+      // Deterministic shuffle using round number as seed to ensure all users see same order
+      const seededRandom = (seed: number) => {
+        let x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      };
+      
+      // Fisher-Yates shuffle with seeded random for consistent ordering across all users
       for (let i = eligiblePlayers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(seededRandom(roundNumber * 1000 + i) * (i + 1));
         [eligiblePlayers[i], eligiblePlayers[j]] = [eligiblePlayers[j], eligiblePlayers[i]];
       }
       
@@ -745,6 +751,14 @@ export const auctionService = {
       const allPlayers = await playerService.getAllPlayers();
       const unsoldPlayers = allPlayers.filter(p => p.status === 'unsold');
       const activePlayers = allPlayers.filter(p => p.status === 'active' || p.status === 'pending');
+      
+      console.log('🔍 hasPlayersForNextRound check:', {
+        totalPlayers: allPlayers.length,
+        unsoldCount: unsoldPlayers.length,
+        activeCount: activePlayers.length,
+        playerStatuses: allPlayers.map(p => ({ name: p.name, status: p.status })),
+        hasPlayersAvailable: unsoldPlayers.length > 0 || activePlayers.length > 0
+      });
       
       // Players are available if there are unsold players (can be reset to active) or active/pending players
       return unsoldPlayers.length > 0 || activePlayers.length > 0;

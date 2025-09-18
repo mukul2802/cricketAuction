@@ -466,7 +466,7 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                     <TableHead>Sold Price</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Team</TableHead>
-                    {user?.role !== 'manager' && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -530,51 +530,49 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      {user?.role !== 'manager' && (
-                        <TableCell className="text-right">
-                          <div className="flex items-center gap-1">
-                            {user?.role === 'owner' && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center gap-1">
+                          {user?.role === 'owner' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                toggleTargetPlayer(player.id);
+                              }}
+                              className={targetPlayers.includes(player.id) ? 'text-yellow-500' : ''}
+                            >
+                              <Target className="w-4 h-4" />
+                            </Button>
+                          )}
+                          
+                          {(user?.role === 'admin') && (
+                            <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  toggleTargetPlayer(player.id);
+                                  handleEditPlayer(player);
                                 }}
-                                className={targetPlayers.includes(player.id) ? 'text-yellow-500' : ''}
                               >
-                                <Target className="w-4 h-4" />
+                                <Edit className="w-4 h-4" />
                               </Button>
-                            )}
-                            
-                            {(user?.role === 'admin') && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleEditPlayer(player);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleDeletePlayer(player);
-                                  }}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleDeletePlayer(player);
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminDashboard } from '../../components/pages/AdminDashboard';
 import { OwnerDashboard } from '../../components/pages/OwnerDashboard';
-import { ManagerDashboard } from '../../components/pages/ManagerDashboard';
+
 import { PlayersPage } from '../../components/pages/PlayersPage';
 import { TeamsPage } from '../../components/pages/TeamsPage';
 import { UsersPage } from '../../components/pages/UsersPage';
@@ -38,7 +38,6 @@ export function Router() {
       case 'dashboard':
         if (user?.role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />;
         if (user?.role === 'owner') return <OwnerDashboard onNavigate={handleNavigate} />;
-        if (user?.role === 'manager') return <ManagerDashboard onNavigate={handleNavigate} />;
         return <AdminDashboard onNavigate={handleNavigate} />;
       case 'players':
         return <PlayersPage onNavigate={handleNavigate} />;

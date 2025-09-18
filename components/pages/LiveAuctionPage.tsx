@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -12,6 +12,7 @@ import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound as AuctionRoundType } from '../../lib/firebaseServices';
+import Shimmer, { ShimmerText, ShimmerAvatar, ShimmerButton } from '../ui/shimmer';
 import { toast } from 'sonner';
 import {
   Check,
@@ -49,6 +50,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
   const [showSidebar, setShowSidebar] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPlayerTransitioning, setIsPlayerTransitioning] = useState(false);
 
   const [auctionStarted, setAuctionStarted] = useState(false);
   const [hasPlayersForNextRound, setHasPlayersForNextRound] = useState(true);
@@ -351,11 +353,13 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
            console.error('Error reloading players after auction update:', error);
          }
        } else if (round && round.currentPlayerId) {
-        // Only update player index if currentPlayerId changed - direct atomic updates
+        // Update player index and stableCurrentPlayer when currentPlayerId changes - direct atomic updates
         const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
-        if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
-          setCurrentPlayerIndex(playerIndex);
-          setStableCurrentPlayer(players[playerIndex]);
+        if (playerIndex !== -1) {
+          // Only update if the player has actually changed to prevent unnecessary transitions
+          if (players[playerIndex]?.id !== stableCurrentPlayer?.id) {
+            updatePlayerStateAtomically(playerIndex, players[playerIndex]);
+          }
         }
       }
     }, [currentRound, players]);
@@ -469,13 +473,26 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                } catch (error) {
                  console.error('Error loading players after auction update:', error);
                }
-             } else if (round.currentPlayerId && players.length > 0) {
-               // Update player index if currentPlayerId changed - use fresh data to prevent race conditions
+             } else if (round.currentPlayerId) {
+               // Update player index if currentPlayerId changed - always use fresh data to prevent race conditions
+               console.log('🔄 CurrentPlayerId changed, updating player:', {
+                 newPlayerId: round.currentPlayerId,
+                 currentPlayerIndex,
+                 currentPlayerId: currentPlayer?.id
+               });
+               
                try {
                  const freshPlayers = await auctionService.getEligiblePlayersForRound(round.round);
                  const playerIndex = freshPlayers.findIndex(p => p.id === round.currentPlayerId);
-                 if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
-                   // Atomic update to prevent flicker using fresh data
+                 
+                 console.log('🔄 Fresh player lookup result:', {
+                   playerIndex,
+                   foundPlayer: freshPlayers[playerIndex]?.name,
+                   totalFreshPlayers: freshPlayers.length
+                 });
+                 
+                 if (playerIndex !== -1) {
+                   // Always update to ensure sync, even if index appears the same
                    setPlayers(freshPlayers);
                    setCurrentPlayerIndex(playerIndex);
                    const targetPlayer = freshPlayers[playerIndex];
@@ -485,16 +502,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                  }
                } catch (error) {
                  console.error('Error getting fresh player data:', error);
-                 // Fallback to existing logic with stale data
-                  const playerIndex = players.findIndex(p => p.id === round.currentPlayerId);
-                  if (playerIndex !== -1 && playerIndex !== currentPlayerIndex) {
-                    setCurrentPlayerIndex(playerIndex);
-                    const targetPlayer = players[playerIndex];
-                    if (targetPlayer) {
-                      setStableCurrentPlayer(targetPlayer);
-                    }
-                  }
-                }
+               }
              }
            } else {
              setCurrentRound(null);
@@ -547,37 +555,23 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
   // Use state for currentPlayer to prevent flicker during transitions
   const [stableCurrentPlayer, setStableCurrentPlayer] = useState<Player | null>(null);
   
-  // Removed updateCurrentPlayer function - now using atomic state updates to prevent flicker
+  // Batch state updates to prevent flicker using startTransition
+  const updatePlayerStateAtomically = useCallback((newIndex: number, newPlayer: Player | null) => {
+    // Start transition loading state
+    setIsPlayerTransitioning(true);
+    
+    // Brief delay to show shimmer effect - balanced for visibility and smoothness
+    setTimeout(() => {
+      startTransition(() => {
+        setCurrentPlayerIndex(newIndex);
+        setStableCurrentPlayer(newPlayer);
+        setIsPlayerTransitioning(false);
+      });
+    }, 200); // 200ms delay for shimmer visibility - balanced timing
+  }, []);
   
-  // Initialize stableCurrentPlayer when players load - only run when players change
-  useEffect(() => {
-    if (activeRoundPlayers.length > 0) {
-      const initialPlayer = activeRoundPlayers[currentPlayerIndex] || activeRoundPlayers[0];
-      if (initialPlayer && (!stableCurrentPlayer || stableCurrentPlayer.id !== initialPlayer.id)) {
-        setStableCurrentPlayer(initialPlayer);
-      }
-    }
-  }, [activeRoundPlayers, currentPlayerIndex]);
-  
-  // Add transition state to prevent flicker during player changes
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  
-  // Track when currentPlayerId changes to manage transitions
-  useEffect(() => {
-    if (currentRound?.currentPlayerId && stableCurrentPlayer && 
-        currentRound.currentPlayerId !== stableCurrentPlayer.id) {
-      setIsTransitioning(true);
-      // Clear transition state after a brief delay to allow smooth transition
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [currentRound?.currentPlayerId, stableCurrentPlayer?.id]);
-  
-  // Only show current player if not transitioning or if it matches the expected player
-  const currentPlayer: Player | undefined = 
-    isTransitioning && currentRound?.currentPlayerId !== stableCurrentPlayer?.id 
-      ? undefined 
-      : stableCurrentPlayer || undefined;
+  // Always show stableCurrentPlayer to prevent flickering - never show undefined during transitions
+  const currentPlayer: Player | undefined = stableCurrentPlayer || undefined;
   
   // Debug logging for round number display
   console.log('🔍 LiveAuctionPage render state:', {
@@ -602,24 +596,15 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     });
   }, [user?.role, currentPlayer, selectedTeam, isProcessing, teams.length]);
   
-  // If no current player, show loading or no player state
-  if (!currentPlayer && !loading) {
+  // Only show no player state if we're certain there are no players and not in a loading state
+  // Prevent flickering by being more conservative about when to show this state
+  if (!currentPlayer && !loading && players.length === 0) {
     const isAuctionCompleted = currentRound?.status === 'completed';
     const isWaitingForAdmin = currentRound?.status === 'waiting_for_admin';
     const isAuctionNotStarted = currentRound && !auctionStarted && players.length > 0;
     const isAuctionNotLive = !currentRound || currentRound.status === 'pending';
     
-    // If we're transitioning between players, show a brief loading state
-    if (isTransitioning) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-white text-lg">Loading next player...</p>
-          </div>
-        </div>
-      );
-    }
+    // Removed transition loading state that was causing flickering
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
@@ -628,7 +613,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
             <Trophy className="w-16 h-16 text-primary mx-auto mb-6" />
             <h2 className="text-2xl font-bold mb-4 text-white">
               {isAuctionCompleted ? 'Auction Completed!' : 
-               isWaitingForAdmin ? (user?.role === 'admin' ? 'Round Complete - Start Next Round' : 'Waiting for Next Round') :
+               isWaitingForAdmin ? user?.role === 'admin' ? 'Round Complete - Start Next Round' : 'Waiting for Next Round' :
                isAuctionNotStarted ? 'Auction Ready to Start' : 
                isAuctionNotLive ? 'No Auction Going On' : 'No Player Available'}
             </h2>
@@ -636,9 +621,9 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
               {isAuctionCompleted 
                 ? 'Thank you for participating! The auction has been completed successfully. Redirecting to dashboard...' 
                 : isWaitingForAdmin
-                ? (user?.role === 'admin' 
+                ? user?.role === 'admin' 
                   ? 'The current round is complete. You can start the next round or end the auction.' 
-                  : 'Waiting for admin to start the next round. Please wait...')
+                  : 'Waiting for admin to start the next round or end auction...'
                 : isAuctionNotStarted
                 ? `Ready to start auction with ${players.length} players. Admin can start the auction.`
                 : isAuctionNotLive
@@ -720,8 +705,8 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     );
   }
   
-  // If still loading or no current player, don't render the main auction interface
-  if (loading || !currentPlayer) {
+  // Only show loading state when actually loading, not when currentPlayer is temporarily null
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
         <Card className="max-w-md w-full mx-4 bg-gray-800/90 border-gray-700">
@@ -729,6 +714,35 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
             <h2 className="text-2xl font-bold mb-4 text-white">Loading Auction</h2>
             <p className="text-gray-300">Please wait while we load the auction data...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Fallback: if currentPlayer is null but we have players, initialize with first available player
+  // This prevents the "Preparing Player" loading screen when players are available
+  if (!currentPlayer && players.length > 0 && currentRound) {
+    // Initialize with the current player from the round, or first player if none set
+    const targetPlayer = currentRound.currentPlayerId 
+      ? players.find(p => p.id === currentRound.currentPlayerId) || players[0]
+      : players[0];
+    
+    if (targetPlayer) {
+      // Set the current player immediately to prevent loading screen
+      setStableCurrentPlayer(targetPlayer);
+      const playerIndex = players.findIndex(p => p.id === targetPlayer.id);
+      setCurrentPlayerIndex(playerIndex >= 0 ? playerIndex : 0);
+    }
+    
+    // Show a brief loading state while the state updates
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center auction-dark">
+        <Card className="max-w-md w-full mx-4 bg-gray-800/90 border-gray-700">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h2 className="text-2xl font-bold mb-4 text-white">Preparing Player</h2>
+            <p className="text-gray-300">Loading player data...</p>
           </CardContent>
         </Card>
       </div>
@@ -919,8 +933,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         // Update auction round in Firebase - only decrement if player wasn't already sold
         if (currentRound && currentPlayer.status !== 'sold') {
           await auctionService.updateAuctionRound(currentRound.id, {
-            playersLeft: Math.max(0, (currentRound.playersLeft || 0) - 1),
-            currentPlayerId: ""
+            playersLeft: Math.max(0, (currentRound.playersLeft || 0) - 1)
           });
         }
         
@@ -949,13 +962,19 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           // Get the first remaining player directly from fresh data
           const nextPlayer = remainingPlayers[0];
           
-          // Only update Firebase - let subscription handle UI updates to prevent flicker
+          // Use atomic update to show shimmer during transition
           if (currentRound && nextPlayer) {
             try {
-              await auctionService.updateAuctionRound(currentRound.id, {
-                currentPlayerId: nextPlayer.id,
-                playersLeft: remainingPlayers.length
-              });
+              const nextPlayerIndex = freshPlayers.findIndex(p => p.id === nextPlayer.id);
+              if (nextPlayerIndex !== -1) {
+                // Show shimmer and update player atomically
+                updatePlayerStateAtomically(nextPlayerIndex, nextPlayer);
+                // Update Firebase with next player and remaining count
+                await auctionService.updateAuctionRound(currentRound.id, {
+                  playersLeft: remainingPlayers.length,
+                  currentPlayerId: nextPlayer.id
+                });
+              }
             } catch (error) {
               console.error('Error updating current player:', error);
               toast.error('Failed to update current player');
@@ -1017,8 +1036,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
       // Update auction round in Firebase - only decrement if player wasn't already unsold
       if (currentRound && currentPlayer.status !== 'unsold') {
         await auctionService.updateAuctionRound(currentRound.id, {
-          playersLeft: Math.max(0, (currentRound.playersLeft || 0) - 1),
-          currentPlayerId: ""
+          playersLeft: Math.max(0, (currentRound.playersLeft || 0) - 1)
         });
       }
       
@@ -1043,13 +1061,19 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         // Get the first remaining player directly from fresh data
         const nextPlayer = remainingPlayers[0];
         
-        // Only update Firebase - let subscription handle UI updates to prevent flicker
+        // Use atomic update to show shimmer during transition
         if (currentRound && nextPlayer) {
           try {
-            await auctionService.updateAuctionRound(currentRound.id, {
-              currentPlayerId: nextPlayer.id,
-              playersLeft: remainingPlayers.length
-            });
+            const nextPlayerIndex = freshPlayers.findIndex(p => p.id === nextPlayer.id);
+            if (nextPlayerIndex !== -1) {
+              // Show shimmer and update player atomically
+              updatePlayerStateAtomically(nextPlayerIndex, nextPlayer);
+              // Update Firebase with next player and remaining count
+              await auctionService.updateAuctionRound(currentRound.id, {
+                playersLeft: remainingPlayers.length,
+                currentPlayerId: nextPlayer.id
+              });
+            }
           } catch (error) {
             console.error('Error updating current player:', error);
             toast.error('Failed to update current player');
@@ -1101,7 +1125,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
       // Get the first remaining player directly from fresh data
       const nextPlayer = remainingPlayers[0];
       
-      // Only update Firebase - let subscription handle UI updates to prevent flicker
+      // Only update Firebase - let subscription handle UI updates to prevent race conditions
       if (currentRound && nextPlayer) {
         try {
           await auctionService.updateAuctionRound(currentRound.id, {
@@ -1175,7 +1199,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                   </div>
                 )}
                 
-                {/* Show start next round option only if players are available */}
+                {/* Show start next round option only if players are available - ADMIN ONLY */}
                 {user?.role === 'admin' && hasPlayersForNextRound && !allPlayersSold && (
                   <Button onClick={(e) => {
                     e.preventDefault();
@@ -1234,7 +1258,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                 Back to Dashboard
               </Button>
               
-              {user?.role !== 'admin' && (
+              {user?.role !== 'admin' && user?.role !== 'owner' && (
                 <p className="text-sm text-gray-400 text-center">
                   Waiting for admin to start the auction...
                 </p>
@@ -1343,8 +1367,8 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
 
       {/* Main Content */}
       <div className="flex-1 relative">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
+        {/* Static Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
 
         {/* Cricket Auction Logo - Top Center */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -1407,44 +1431,72 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
               
               {/* Player Info - Left */}
               <div className="text-center lg:text-left space-y-6">
-                <h1 className="text-3xl lg:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
-                  {currentPlayer.name.toUpperCase()}
-                </h1>
-                
-                <div className="mb-6">
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-lg px-4 py-2">
-                    {currentPlayer.role}
-                  </Badge>
-                </div>
+                {isPlayerTransitioning ? (
+                  <>
+                    <Shimmer height="h-12" width="w-3/4" className="mx-auto lg:mx-0" />
+                    <Shimmer height="h-8" width="w-24" className="mx-auto lg:mx-0" rounded="full" />
+                    <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
+                      <div className="space-y-3 text-center">
+                        <Shimmer height="h-6" width="w-32" className="mx-auto" />
+                        <Shimmer height="h-10" width="w-40" className="mx-auto" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-3xl lg:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
+                      {currentPlayer.name.toUpperCase()}
+                    </h1>
+                    
+                    <div className="mb-6">
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-lg px-4 py-2">
+                        {currentPlayer.role}
+                      </Badge>
+                    </div>
 
-                {/* Base Price Display */}
-                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
-                  <div className="space-y-3 text-center">
-                    <div>
-                      <span className="text-primary text-lg">BASE PRICE:</span>
+                    {/* Base Price Display */}
+                    <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
+                      <div className="space-y-3 text-center">
+                        <div>
+                          <span className="text-primary text-lg">BASE PRICE:</span>
+                        </div>
+                        <div className="text-white text-4xl font-bold">
+                          ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-white text-4xl font-bold">
-                      ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
               {/* Player Image - Center */}
               <div className="flex justify-center">
                 <div className="relative">
-                  <div className="w-80 h-80 rounded-full border-4 border-primary shadow-[0_0_50px_rgba(16,185,129,0.3)] overflow-hidden">
-                    <ImageWithFallback
-                      src={currentPlayer.image}
-                      alt={currentPlayer.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-primary/20 backdrop-blur-sm rounded-full px-6 py-2 border border-primary/30">
-                      <span className="text-primary font-bold">ON AUCTION</span>
-                    </div>
-                  </div>
+                  {isPlayerTransitioning ? (
+                    <>
+                      <div className="w-80 h-80 rounded-full border-4 border-primary overflow-hidden">
+                        <ShimmerAvatar size="lg" className="w-full h-full" />
+                      </div>
+                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                        <Shimmer height="h-8" width="w-32" rounded="full" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-80 h-80 rounded-full border-4 border-primary overflow-hidden">
+                        <ImageWithFallback
+                          src={currentPlayer.image}
+                          alt={currentPlayer.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-primary/20 backdrop-blur-sm rounded-full px-6 py-2 border border-primary/30">
+                          <span className="text-primary font-bold">ON AUCTION</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1453,7 +1505,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                 {(() => {
                   console.log('🔍 Rendering buttons check:', {
                     userRole: user?.role,
-                    isAdminOrManager: user?.role === 'admin' || user?.role === 'manager',
+                    isAdmin: user?.role === 'admin',
                     selectedTeam,
                     isProcessing,
                     confirmSaleDisabled: !selectedTeam || isProcessing,
@@ -1462,91 +1514,115 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                   });
                   return null;
                 })()}
-                {(user?.role === 'admin' || user?.role === 'manager') && (
-                  <div className="space-y-4">
+                <div className="space-y-4">
+                  {isPlayerTransitioning ? (
                     <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
-                      <Label className="text-primary mb-2 block text-lg font-medium">WINNING TEAM</Label>
-                      <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                        <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700/50 h-12">
-                          <SelectValue placeholder="Select team" className="text-white" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                              {team.name} (₹{(team.remainingBudget / 10000000).toFixed(1)}cr)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Label className="text-primary mb-2 block mt-4 text-lg font-medium">
-                        FINAL PRICE (Min: ₹{(currentPlayer.basePrice / 100000).toFixed(1)} Lakhs)
-                      </Label>
-                      <Input
-                        type="text"
-                        value={soldPrice}
-                        onChange={(e) => setSoldPrice(e.target.value)}
-                        placeholder={`Enter price (minimum ${currentPlayer.basePrice})`}
-                        className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 h-12 text-lg"
-                      />
+                      <Shimmer height="h-6" width="w-32" className="mb-2" />
+                      <Shimmer height="h-12" width="w-full" className="mb-4" />
+                      <Shimmer height="h-6" width="w-40" className="mb-2" />
+                      <Shimmer height="h-12" width="w-full" />
                     </div>
+                  ) : (
+                    <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
+                      {(user?.role === 'admin' || user?.role === 'owner') && (
+                          <>
+                            <Label className="text-primary mb-2 block text-lg font-medium">WINNING TEAM</Label>
+                            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700/50 h-12">
+                                <SelectValue placeholder="Select team" className="text-white" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-600">
+                                {teams.map((team) => (
+                                  <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
+                                    {team.name} (₹{(team.remainingBudget / 10000000).toFixed(1)}cr)
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          
+                            <Label className="text-primary mb-2 block mt-4 text-lg font-medium">
+                              FINAL PRICE (Min: ₹{(currentPlayer.basePrice / 100000).toFixed(1)} Lakhs)
+                            </Label>
+                            <Input
+                              type="text"
+                              value={soldPrice}
+                              onChange={(e) => setSoldPrice(e.target.value)}
+                              placeholder={`Enter price (minimum ${currentPlayer.basePrice})`}
+                              className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 h-12 text-lg"
+                            />
+                          </>
+                        )}
+                    </div>
+                  )}
 
-                    <div className="space-y-3 relative z-10">
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          console.log('🎯 CONFIRM SALE button clicked!', {
-                            event: e,
-                            disabled: !selectedTeam || !soldPrice || isProcessing,
-                            selectedTeam,
-                            soldPrice,
-                            isProcessing,
-                            currentPlayer: currentPlayer?.name,
-                            timestamp: new Date().toISOString()
-                          });
-                          if (!selectedTeam || !soldPrice || isProcessing) {
-                            console.log('❌ Button click blocked - disabled state');
-                            return;
-                          }
-                          console.log('✅ Calling handleMarkAsSold...');
-                          handleMarkAsSold();
-                        }}
-                        onMouseDown={() => console.log('🖱️ CONFIRM SALE mouseDown detected')}
-                        onMouseUp={() => console.log('🖱️ CONFIRM SALE mouseUp detected')}
-                        onMouseEnter={() => console.log('🖱️ CONFIRM SALE mouseEnter detected')}
-                        onMouseLeave={() => console.log('🖱️ CONFIRM SALE mouseLeave detected')}
-                        className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-lg py-6 h-14 transition-colors duration-200 rounded-md cursor-pointer flex items-center justify-center font-semibold relative z-20"
-                        disabled={!selectedTeam}
-                        style={{ pointerEvents: 'auto' }}
-                      >
-                        CONFIRM SALE
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          console.log('🎯 MARK UNSOLD button clicked!', {
-                            event: e,
-                            currentPlayer: currentPlayer?.name,
-                            timestamp: new Date().toISOString()
-                          });
-                          console.log('✅ Calling handleMarkAsUnsold...');
-                          handleMarkAsUnsold();
-                        }}
-                        onMouseDown={() => console.log('🖱️ MARK UNSOLD mouseDown detected')}
-                        onMouseUp={() => console.log('🖱️ MARK UNSOLD mouseUp detected')}
-                        onMouseEnter={() => console.log('🖱️ MARK UNSOLD mouseEnter detected')}
-                        onMouseLeave={() => console.log('🖱️ MARK UNSOLD mouseLeave detected')}
-                        className="w-full bg-red-600/20 border border-red-500 text-red-400 hover:bg-red-600/30 active:bg-red-600/50 disabled:bg-gray-500 disabled:cursor-not-allowed text-lg py-6 h-14 transition-colors duration-200 rounded-md cursor-pointer flex items-center justify-center font-semibold relative z-20"
-                        disabled={false}
-                        style={{ pointerEvents: 'auto' }}
-                      >
-                        MARK UNSOLD
-                      </button>
-                    </div>
+                  <div className="space-y-3 relative z-10">
+                    {isPlayerTransitioning ? (
+                       <>
+                         <ShimmerButton className="w-full h-14" />
+                         <ShimmerButton className="w-full h-14" />
+                       </>
+                    ) : (
+                      <>
+                        {(user?.role === 'admin' || user?.role === 'owner') && (
+                          <>
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                console.log('🎯 CONFIRM SALE button clicked!', {
+                                  event: e,
+                                  disabled: !selectedTeam || !soldPrice || isProcessing,
+                                  selectedTeam,
+                                  soldPrice,
+                                  isProcessing,
+                                  currentPlayer: currentPlayer?.name,
+                                  timestamp: new Date().toISOString()
+                                });
+                                if (!selectedTeam || !soldPrice || isProcessing) {
+                                  console.log('❌ Button click blocked - disabled state');
+                                  return;
+                                }
+                                console.log('✅ Calling handleMarkAsSold...');
+                                handleMarkAsSold();
+                              }}
+                              onMouseDown={() => console.log('🖱️ CONFIRM SALE mouseDown detected')}
+                              onMouseUp={() => console.log('🖱️ CONFIRM SALE mouseUp detected')}
+                              onMouseEnter={() => console.log('🖱️ CONFIRM SALE mouseEnter detected')}
+                              onMouseLeave={() => console.log('🖱️ CONFIRM SALE mouseLeave detected')}
+                              className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-500 disabled:cursor-not-allowed text-white text-lg py-6 h-14 rounded-md cursor-pointer flex items-center justify-center font-semibold relative z-20"
+                              disabled={!selectedTeam}
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              CONFIRM SALE
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                console.log('🎯 MARK UNSOLD button clicked!', {
+                                  event: e,
+                                  currentPlayer: currentPlayer?.name,
+                                  timestamp: new Date().toISOString()
+                                });
+                                console.log('✅ Calling handleMarkAsUnsold...');
+                                handleMarkAsUnsold();
+                              }}
+                              onMouseDown={() => console.log('🖱️ MARK UNSOLD mouseDown detected')}
+                              onMouseUp={() => console.log('🖱️ MARK UNSOLD mouseUp detected')}
+                              onMouseEnter={() => console.log('🖱️ MARK UNSOLD mouseEnter detected')}
+                              onMouseLeave={() => console.log('🖱️ MARK UNSOLD mouseLeave detected')}
+                              className="w-full bg-red-600/20 border border-red-500 text-red-400 hover:bg-red-600/30 active:bg-red-600/50 disabled:bg-gray-500 disabled:cursor-not-allowed text-lg py-6 h-14 rounded-md cursor-pointer flex items-center justify-center font-semibold relative z-20"
+                              disabled={false}
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              MARK UNSOLD
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -1559,46 +1635,96 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
               
               {/* Batting Stats */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Target className="text-primary w-4 h-4" />
-                  <h3 className="text-primary font-bold">BATTING</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.matches || 0}</div>
-                    <div className="text-xs text-gray-400">MATCHES</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.battingAvg || 0}</div>
-                    <div className="text-xs text-gray-400">AVERAGE</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.strikeRate || 0}</div>
-                    <div className="text-xs text-gray-400">STRIKE RATE</div>
-                  </div>
-                </div>
+                {isPlayerTransitioning ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shimmer width="w-4" height="h-4" className="rounded-full" />
+                      <Shimmer width="w-16" height="h-4" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-12" height="h-3" className="mx-auto" />
+                      </div>
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-12" height="h-3" className="mx-auto" />
+                      </div>
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-16" height="h-3" className="mx-auto" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="text-primary w-4 h-4" />
+                      <h3 className="text-primary font-bold">BATTING</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.matches || 0}</div>
+                        <div className="text-xs text-gray-400">MATCHES</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.battingAvg || 0}</div>
+                        <div className="text-xs text-gray-400">AVERAGE</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.strikeRate || 0}</div>
+                        <div className="text-xs text-gray-400">STRIKE RATE</div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Bowling Stats */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <h3 className="text-primary font-bold">BOWLING</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
-                    <div className="text-xs text-gray-400">OVERS</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.wickets || 0}</div>
-                    <div className="text-xs text-gray-400">WICKETS</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
-                    <div className="text-xs text-gray-400">ECONOMY</div>
-                  </div>
-                </div>
+                {isPlayerTransitioning ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shimmer width="w-3" height="h-3" className="rounded-full" />
+                      <Shimmer width="w-16" height="h-4" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-10" height="h-3" className="mx-auto" />
+                      </div>
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-12" height="h-3" className="mx-auto" />
+                      </div>
+                      <div>
+                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-14" height="h-3" className="mx-auto" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
+                      <h3 className="text-primary font-bold">BOWLING</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
+                        <div className="text-xs text-gray-400">OVERS</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.wickets || 0}</div>
+                        <div className="text-xs text-gray-400">WICKETS</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
+                        <div className="text-xs text-gray-400">ECONOMY</div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

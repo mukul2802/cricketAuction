@@ -3,7 +3,8 @@ import {
   signOut,
   createUserWithEmailAndPassword,
   User as FirebaseUser,
-  onAuthStateChanged
+  onAuthStateChanged,
+  deleteUser as deleteFirebaseUser
 } from 'firebase/auth';
 import {
   collection,
@@ -12,10 +13,13 @@ import {
   getDoc,
   addDoc,
   setDoc,
+  updateDoc,
+  deleteDoc,
   query,
   orderBy,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  where
 } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { User, ApiResponse } from '@/types';
@@ -158,6 +162,81 @@ export const authApi = {
     } catch (error: any) {
       console.error('Create initial user error:', error);
       throw new Error(error.message || 'Failed to create initial user');
+    }
+  },
+
+  /**
+   * Update user profile
+   */
+  async updateUser(userId: string, updates: Partial<User>): Promise<void> {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error: any) {
+      console.error('Update user error:', error);
+      throw new Error(error.message || 'Failed to update user');
+    }
+  },
+
+  /**
+   * Delete user with cascading effects
+   */
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      // Get user data first to check if they're a team owner
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+      
+      const userData = userDoc.data() as User;
+      
+      // If user is a team owner, handle cascading deletion
+      if (userData.role === 'owner' && userData.teamId) {
+        await this.handleTeamOwnerDeletion(userData.teamId);
+      }
+      
+      // Delete user profile from Firestore
+      await deleteDoc(doc(db, 'users', userId));
+      
+      // Note: Firebase Auth user deletion would require admin SDK in production
+      // For now, we only delete the Firestore profile
+    } catch (error: any) {
+      console.error('Delete user error:', error);
+      throw new Error(error.message || 'Failed to delete user');
+    }
+  },
+
+  /**
+   * Handle team owner deletion with cascading effects
+   */
+  async handleTeamOwnerDeletion(teamId: string): Promise<void> {
+    try {
+      // Get all players assigned to this team
+      const playersRef = collection(db, 'players');
+      const playersQuery = query(playersRef, where('teamId', '==', teamId));
+      const playersSnapshot = await getDocs(playersQuery);
+      
+      // Update all players to active status (remove team assignment)
+      const playerUpdates = playersSnapshot.docs.map(playerDoc => 
+        updateDoc(playerDoc.ref, {
+          teamId: null,
+          status: 'active',
+          finalPrice: null,
+          updatedAt: serverTimestamp()
+        })
+      );
+      
+      await Promise.all(playerUpdates);
+      
+      // Delete the team
+      await deleteDoc(doc(db, 'teams', teamId));
+    } catch (error: any) {
+      console.error('Handle team owner deletion error:', error);
+      throw new Error(error.message || 'Failed to handle team owner deletion');
     }
   },
 

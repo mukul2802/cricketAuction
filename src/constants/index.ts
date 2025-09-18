@@ -5,7 +5,6 @@ export const APP_VERSION = '1.0.0';
 // User Roles
 export const USER_ROLES = {
   ADMIN: 'admin',
-  MANAGER: 'manager',
   OWNER: 'owner'
 } as const;
 
@@ -75,8 +74,7 @@ export const STORAGE_PATHS = {
 // Demo accounts for testing
 export const DEMO_ACCOUNTS = {
   ADMIN: { role: 'admin', email: 'admin@cricket.com', password: 'admin123' },
-  OWNER: { role: 'owner', email: 'owner@cricket.com', password: 'owner123' },
-  MANAGER: { role: 'manager', email: 'manager@cricket.com', password: 'manager123' }
+  OWNER: { role: 'owner', email: 'owner@cricket.com', password: 'owner123' }
 };
 
 // Error Messages
