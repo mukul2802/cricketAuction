@@ -177,10 +177,12 @@ export function OwnerDashboard({ onNavigate }: OwnerDashboardProps) {
                       <h4 className="font-medium">{player.name}</h4>
                       <Badge variant="secondary">{player.role}</Badge>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Final Price:</span>
-                      <span className="font-medium">₹{player.finalPrice?.toLocaleString() || 'N/A'}</span>
-                    </div>
+                    {player.finalPrice && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Final Price:</span>
+                        <span className="font-medium">₹{player.finalPrice.toLocaleString()}</span>
+                      </div>
+                    )}
                     {player.age && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Age:</span>
@@ -215,7 +217,7 @@ export function OwnerDashboard({ onNavigate }: OwnerDashboardProps) {
                 Other Teams
               </CardTitle>
               <CardDescription>
-                View other teams and their squads
+                View other teams and their details
               </CardDescription>
             </CardHeader>
           </Card>

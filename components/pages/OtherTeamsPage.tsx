@@ -220,11 +220,13 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                     .map((player) => (
                     <div key={player.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <ImageWithFallback
-                          src={player.image || ''}
-                          alt={player.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
+                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                          <ImageWithFallback
+                              src={player.image || ''}
+                              alt={player.name}
+                              className="w-full h-full rounded-full object-cover object-top"
+                            />
+                        </div>
                         <div>
                           <p className="font-medium text-sm">{player.name}</p>
                           <div className="flex items-center gap-2">

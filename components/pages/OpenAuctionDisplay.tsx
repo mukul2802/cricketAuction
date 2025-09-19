@@ -112,11 +112,13 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
       {/* Cricket Auction Logo - Top Center */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
         <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
-          <ImageWithFallback
-            src="https://images.unsplash.com/photo-1580831800257-f83135932664?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmlja2V0JTIwbG9nbyUyMHRyb3BoeXxlbnwxfHx8fDE3NTY4OTk1MzF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-            alt="Cricket Auction Logo"
-            className="w-8 h-8 rounded-full object-cover"
-          />
+          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+            <ImageWithFallback
+                src="https://images.unsplash.com/photo-1580831800257-f83135932664?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmlja2V0JTIwbG9nbyUyMHRyb3BoeXxlbnwxfHx8fDE3NTY4OTk1MzF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                alt="Cricket Auction Logo"
+                className="w-full h-full rounded-full object-cover object-center"
+              />
+          </div>
           <span className="text-primary font-bold text-lg">CRICKET AUCTION</span>
         </div>
       </div>
@@ -176,6 +178,17 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
                   </Badge>
                 </div>
 
+                <div className="flex flex-col lg:flex-row gap-4 justify-center lg:justify-start mb-6">
+                  <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
+                    <div className="text-xs text-gray-400 mb-1">BATTING HAND</div>
+                    <div className="text-sm font-semibold text-white">{(currentPlayer as any).battingHand || 'N/A'}</div>
+                  </div>
+                  <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
+                    <div className="text-xs text-gray-400 mb-1">BOWLING HAND</div>
+                    <div className="text-sm font-semibold text-white">{(currentPlayer as any).bowlingHand || 'N/A'}</div>
+                  </div>
+                </div>
+
                 {/* Base Price Display */}
                 <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
                   <div className="space-y-3 text-center">
@@ -216,7 +229,7 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
                     <ImageWithFallback
                       src={currentPlayer.image || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=400&fit=crop&crop=face'}
                       alt={currentPlayer.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-top"
                     />
                   </div>
                   <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">

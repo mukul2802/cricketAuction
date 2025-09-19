@@ -43,6 +43,9 @@ export interface Player {
   bowlingAvg?: number;
   economy?: number;
   strikeRate?: number;
+  overs?: number;
+  battingHand?: string;
+  bowlingHand?: string;
   description?: string;
   createdAt: Date;
   updatedAt: Date;

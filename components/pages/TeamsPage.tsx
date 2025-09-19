@@ -422,7 +422,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
            onOpenChange={setShowResetConfirm}
            title="Confirm Reset Action"
            description={
-             resetType === 'fullReset' ? 'This will reset all teams to initial state AND make all players available for auction. This action cannot be undone.' :
+             resetType === 'fullReset' ? 'This will reset all teams to initial state and make all players available for auction. This action cannot be undone.' :
              resetType === 'teams' ? 'This will reset all teams to their initial state (empty rosters, full budgets). This action cannot be undone.' :
              resetType === 'players' ? 'This will make all players available for auction again. This action cannot be undone.' :
              'This will permanently delete all players from the database. This action cannot be undone.'
@@ -444,7 +444,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
         />
 
         <Dialog open={showSquadModal} onOpenChange={setShowSquadModal}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-primary" />

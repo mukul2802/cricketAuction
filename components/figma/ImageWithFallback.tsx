@@ -12,9 +12,17 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
 
   const { src, alt, style, className, ...rest } = props
 
+  // Check if this is a circular image (contains rounded-full class)
+  const isCircular = className?.includes('rounded-full')
+  
+  // Enhanced className for circular images to ensure proper containment and face visibility
+  const enhancedClassName = isCircular 
+    ? `${className} object-cover object-top`
+    : className
+
   return didError ? (
     <div
-      className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
+      className={`inline-block bg-gray-100 text-center align-middle overflow-hidden ${className ?? ''}`}
       style={style}
     >
       <div className="flex items-center justify-center w-full h-full">
@@ -22,6 +30,13 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       </div>
     </div>
   ) : (
-    <img src={src} alt={alt} className={className} style={style} {...rest} onError={handleError} />
+    <img 
+      src={src} 
+      alt={alt} 
+      className={enhancedClassName} 
+      style={style} 
+      {...rest} 
+      onError={handleError}
+    />
   )
 }

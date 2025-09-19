@@ -1298,7 +1298,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                 Back to Dashboard
               </Button>
               
-              {user?.role !== 'admin' && (
+              {user?.role !== 'admin' && user?.role !== 'owner' && (
                 <p className="text-sm text-gray-400 text-center">
                   Waiting for admin action...
                 </p>
@@ -1408,7 +1408,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                   {team.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
                 </div>
                 <div className="text-xs text-white">
-                  ₹{(team.remainingBudget / 10000000).toFixed(0)}Cr
+                  ₹{(team.remainingBudget / 10000000).toFixed(2)}Cr
                 </div>
               </div>
             ))}
@@ -1425,12 +1425,12 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         </div>
 
         {/* Main Auction Content */}
-        <div className="flex items-center justify-center px-8 pt-24 pb-8">
+        <div className={`flex items-center justify-center px-8 pb-8 ${user?.role === 'admin' ? 'pt-40' : 'pt-16'}`}>
           <div className="max-w-6xl w-full">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
               
               {/* Player Info - Left */}
-              <div className="text-center lg:text-left space-y-6">
+              <div className="text-center lg:text-left space-y-6 lg:pl-0">
                 {isPlayerTransitioning ? (
                   <>
                     <Shimmer height="h-12" width="w-3/4" className="mx-auto lg:mx-0" />
@@ -1454,17 +1454,18 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                       </Badge>
                     </div>
 
-                    {/* Base Price Display */}
-                    <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
-                      <div className="space-y-3 text-center">
-                        <div>
-                          <span className="text-primary text-lg">BASE PRICE:</span>
-                        </div>
-                        <div className="text-white text-4xl font-bold">
-                          ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
-                        </div>
+                    <div className="flex flex-col lg:flex-row gap-4 justify-center lg:justify-start">
+                      <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
+                        <div className="text-xs text-gray-400 mb-1">BATTING HAND</div>
+                        <div className="text-sm font-semibold text-white">{(currentPlayer as any).battingHand || 'N/A'}</div>
+                      </div>
+                      <div className="bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
+                        <div className="text-xs text-gray-400 mb-1">BOWLING HAND</div>
+                        <div className="text-sm font-semibold text-white">{(currentPlayer as any).bowlingHand || 'N/A'}</div>
                       </div>
                     </div>
+
+
                   </>
                 )}
               </div>
@@ -1487,7 +1488,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                         <ImageWithFallback
                           src={currentPlayer.image}
                           alt={currentPlayer.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-top"
                         />
                       </div>
                       <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
@@ -1501,7 +1502,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
               </div>
 
               {/* Team Selection & Actions - Right */}
-              <div className="text-center lg:text-right">
+              <div className="text-center lg:text-right lg:pr-0">
                 {(() => {
                   console.log('🔍 Rendering buttons check:', {
                     userRole: user?.role,
@@ -1534,7 +1535,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                               <SelectContent className="bg-gray-800 border-gray-600">
                                 {teams.map((team) => (
                                   <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                                    {team.name} (₹{(team.remainingBudget / 10000000).toFixed(1)}cr)
+                                    {team.name} (₹{(team.remainingBudget / 10000000).toFixed(2)}cr)
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1628,108 +1629,135 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           </div>
         </div>
 
-        {/* Player Stats - Bottom */}
-        <div className="absolute bottom-4 left-4 right-4 z-10">
-          <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Batting Stats */}
-              <div>
+        {/* Player Stats Cards - Bottom */}
+        <div className="absolute bottom-2 left-2.5 right-2.5 z-10">
+          <div className="grid grid-cols-1 gap-3">
+            {/* Stats Cards Row */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* Batting Stats Card */}
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50">
                 {isPlayerTransitioning ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shimmer width="w-4" height="h-4" className="rounded-full" />
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Shimmer width="w-2" height="h-2" className="rounded-full" />
                       <Shimmer width="w-16" height="h-4" />
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-4 gap-2 text-xs">
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
                         <Shimmer width="w-12" height="h-3" className="mx-auto" />
                       </div>
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-3" className="mx-auto" />
+                      </div>
+                      <div>
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
                         <Shimmer width="w-12" height="h-3" className="mx-auto" />
                       </div>
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
                         <Shimmer width="w-16" height="h-3" className="mx-auto" />
                       </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Target className="text-primary w-4 h-4" />
-                      <h3 className="text-primary font-bold">BATTING</h3>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <h3 className="text-green-500 text-sm font-bold">BATTING</h3>
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-4 gap-2 text-xs">
                       <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.matches || 0}</div>
-                        <div className="text-xs text-gray-400">MATCHES</div>
+                        <div className="text-white text-sm font-bold">{currentPlayer?.matches || 0}</div>
+                        <div className="text-gray-400 text-xs">MATCHES</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.battingAvg || 0}</div>
-                        <div className="text-xs text-gray-400">AVERAGE</div>
+                        <div className="text-white text-sm font-bold">{currentPlayer?.runs || 0}</div>
+                        <div className="text-gray-400 text-xs">RUNS</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.strikeRate || 0}</div>
-                        <div className="text-xs text-gray-400">STRIKE RATE</div>
+                        <div className="text-white text-sm font-bold">{currentPlayer?.battingAvg || 0}</div>
+                        <div className="text-gray-400 text-xs">AVERAGE</div>
+                      </div>
+                      <div>
+                        <div className="text-white text-sm font-bold">{currentPlayer?.strikeRate || 0}</div>
+                        <div className="text-gray-400 text-xs">STRIKE RATE</div>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
-              {/* Bowling Stats */}
-              <div>
+              {/* Base Price Card */}
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50">
                 {isPlayerTransitioning ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shimmer width="w-3" height="h-3" className="rounded-full" />
+                  <div className="text-center">
+                    <Shimmer width="w-20" height="h-4" className="mx-auto mb-2" />
+                    <Shimmer width="w-24" height="h-8" className="mx-auto" />
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <h3 className="text-gray-400 text-sm font-medium mb-2">BASE PRICE</h3>
+                    <div className="text-white text-2xl font-bold">
+                      ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bowling Stats Card */}
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50">
+                {isPlayerTransitioning ? (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Shimmer width="w-2" height="h-2" className="rounded-full" />
                       <Shimmer width="w-16" height="h-4" />
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-3 gap-2 text-xs">
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
                         <Shimmer width="w-10" height="h-3" className="mx-auto" />
                       </div>
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
                         <Shimmer width="w-12" height="h-3" className="mx-auto" />
                       </div>
                       <div>
-                        <Shimmer width="w-8" height="h-6" className="mx-auto mb-1" />
-                        <Shimmer width="w-14" height="h-3" className="mx-auto" />
+                        <Shimmer width="w-8" height="h-5" className="mx-auto mb-1" />
+                        <Shimmer width="w-12" height="h-3" className="mx-auto" />
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 bg-primary rounded-full"></div>
-                      <h3 className="text-primary font-bold">BOWLING</h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
-                        <div className="text-xs text-gray-400">OVERS</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.wickets || 0}</div>
-                        <div className="text-xs text-gray-400">WICKETS</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-white">{currentPlayer?.economy || 0}</div>
-                        <div className="text-xs text-gray-400">ECONOMY</div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="text-center">
+                     <div className="flex items-center justify-center gap-2 mb-3">
+                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                       <h3 className="text-green-500 text-sm font-bold">BOWLING</h3>
+                     </div>
+                     <div className="grid grid-cols-3 gap-2 text-xs">
+                       <div>
+                         <div className="text-white text-sm font-bold">{currentPlayer?.overs || 0}</div>
+                         <div className="text-gray-400 text-xs">OVERS</div>
+                       </div>
+                       <div>
+                         <div className="text-white text-sm font-bold">{currentPlayer?.wickets || 0}</div>
+                         <div className="text-gray-400 text-xs">WICKETS</div>
+                       </div>
+                       <div>
+                         <div className="text-white text-sm font-bold">{currentPlayer?.economy || 0}</div>
+                         <div className="text-gray-400 text-xs">ECONOMY</div>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
+           </div>
         </div>
       </div>
     </div>
   );
 });
+
+export default LiveAuctionPage;

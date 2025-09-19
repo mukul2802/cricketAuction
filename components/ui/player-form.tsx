@@ -43,6 +43,19 @@ export function PlayerForm({
   showTeamFields = false,
   teams = []
 }: PlayerFormProps) {
+  // Validation function for numeric inputs
+  const handleNumericInput = (value: string, field: string) => {
+    // Allow empty string, numbers, and decimal points
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setFormData({...formData, [field]: value});
+    }
+  };
+  // Validation logic
+  const isBasePriceValid = formData.basePrice && !isNaN(Number(formData.basePrice)) && Number(formData.basePrice) >= 2000000;
+  const isSoldPriceValid = formData.status !== 'sold' || (formData.soldPrice && !isNaN(Number(formData.soldPrice)) && Number(formData.soldPrice) >= 2000000);
+  const isTeamValid = formData.status !== 'sold' || (formData.team && formData.team !== 'none' && formData.team !== '');
+  const isFormValid = isBasePriceValid && isSoldPriceValid && isTeamValid;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -76,17 +89,15 @@ export function PlayerForm({
           <Label htmlFor="basePrice">Base Price (₹) - Min: 20 Lakhs</Label>
           <Input
             id="basePrice"
-            type="number"
+            type="text"
             value={formData.basePrice}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || parseInt(value) >= 2000000) {
-                setFormData({...formData, basePrice: value});
-              }
-            }}
+            onChange={(e) => setFormData({...formData, basePrice: e.target.value})}
             placeholder="2000000 (20 Lakhs)"
-            min="2000000"
+            className={!isBasePriceValid && formData.basePrice ? 'border-red-500' : ''}
           />
+          {!isBasePriceValid && formData.basePrice && (
+            <p className="text-sm text-red-500 mt-1">Base price must be a valid number and at least 20 Lakhs (2000000)</p>
+          )}
         </div>
         <div>
           <Label htmlFor="imageUrl">Image URL</Label>
@@ -99,12 +110,39 @@ export function PlayerForm({
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="battingHand">Batting Hand</Label>
+          <Select value={formData.battingHand || ''} onValueChange={(value) => setFormData({...formData, battingHand: value})}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select batting hand" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Right">Right</SelectItem>
+              <SelectItem value="Left">Left</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="bowlingHand">Bowling Hand</Label>
+          <Select value={formData.bowlingHand || ''} onValueChange={(value) => setFormData({...formData, bowlingHand: value})}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select bowling hand" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Right">Right</SelectItem>
+              <SelectItem value="Left">Left</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {showTeamFields && (
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="team">Team</Label>
+            <Label htmlFor="team">Team {formData.status === 'sold' && <span className="text-red-500">*</span>}</Label>
             <Select value={formData.team || 'none'} onValueChange={(value) => setFormData({...formData, team: value === 'none' ? '' : value})}>
-              <SelectTrigger>
+              <SelectTrigger className={!isTeamValid ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Select team" />
               </SelectTrigger>
               <SelectContent>
@@ -116,16 +154,25 @@ export function PlayerForm({
                 ))}
               </SelectContent>
             </Select>
+            {!isTeamValid && (
+              <p className="text-sm text-red-500 mt-1">Team is required when status is 'sold'</p>
+            )}
           </div>
           <div>
-            <Label htmlFor="soldPrice">Sold Price (₹) - Min: 20 Lakhs</Label>
+            <Label htmlFor="soldPrice">Sold Price (₹) - Min: 20 Lakhs {formData.status === 'sold' && <span className="text-red-500">*</span>}</Label>
             <Input
               id="soldPrice"
               type="text"
               value={formData.soldPrice || ''}
               onChange={(e) => setFormData({...formData, soldPrice: e.target.value})}
               placeholder="2000000 (20 Lakhs)"
+              className={!isSoldPriceValid ? 'border-red-500' : ''}
             />
+            {!isSoldPriceValid && (
+              <p className="text-sm text-red-500 mt-1">
+                {formData.status === 'sold' ? 'Sold price is required and must be at least 20 Lakhs (2000000)' : ''}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
@@ -134,7 +181,7 @@ export function PlayerForm({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="sold">Sold</SelectItem>
                 <SelectItem value="unsold">Unsold</SelectItem>
               </SelectContent>
@@ -152,9 +199,9 @@ export function PlayerForm({
                 <Label htmlFor="matches">Matches</Label>
                 <Input
                   id="matches"
-                  type="number"
+                  type="text"
                   value={formData.matches || ''}
-                  onChange={(e) => setFormData({...formData, matches: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'matches')}
                   placeholder="0"
                 />
               </div>
@@ -162,9 +209,9 @@ export function PlayerForm({
                 <Label htmlFor="runs">Runs</Label>
                 <Input
                   id="runs"
-                  type="number"
+                  type="text"
                   value={formData.runs || ''}
-                  onChange={(e) => setFormData({...formData, runs: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'runs')}
                   placeholder="0"
                 />
               </div>
@@ -172,9 +219,9 @@ export function PlayerForm({
                 <Label htmlFor="wickets">Wickets</Label>
                 <Input
                   id="wickets"
-                  type="number"
+                  type="text"
                   value={formData.wickets || ''}
-                  onChange={(e) => setFormData({...formData, wickets: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'wickets')}
                   placeholder="0"
                 />
               </div>
@@ -185,10 +232,9 @@ export function PlayerForm({
                 <Label htmlFor="average">Batting Average</Label>
                 <Input
                   id="average"
-                  type="number"
-                  step="0.01"
+                  type="text"
                   value={formData.average || ''}
-                  onChange={(e) => setFormData({...formData, average: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'average')}
                   placeholder="0.00"
                 />
               </div>
@@ -196,10 +242,9 @@ export function PlayerForm({
                 <Label htmlFor="strikeRate">Strike Rate</Label>
                 <Input
                   id="strikeRate"
-                  type="number"
-                  step="0.01"
+                  type="text"
                   value={formData.strikeRate || ''}
-                  onChange={(e) => setFormData({...formData, strikeRate: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'strikeRate')}
                   placeholder="0.00"
                 />
               </div>
@@ -207,50 +252,24 @@ export function PlayerForm({
                 <Label htmlFor="economyRate">Economy Rate</Label>
                 <Input
                   id="economyRate"
-                  type="number"
-                  step="0.01"
+                  type="text"
                   value={formData.economyRate || ''}
-                  onChange={(e) => setFormData({...formData, economyRate: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'economyRate')}
                   placeholder="0.00"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 gap-4 mt-4">
               <div>
                 <Label htmlFor="overs">Overs Bowled</Label>
                 <Input
                   id="overs"
-                  type="number"
-                  step="0.1"
+                  type="text"
                   value={formData.overs || ''}
-                  onChange={(e) => setFormData({...formData, overs: e.target.value})}
+                  onChange={(e) => handleNumericInput(e.target.value, 'overs')}
                   placeholder="0.0"
                 />
-              </div>
-              <div>
-                <Label htmlFor="battingHand">Batting Hand</Label>
-                <Select value={formData.battingHand || ''} onValueChange={(value) => setFormData({...formData, battingHand: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select batting hand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Right">Right</SelectItem>
-                    <SelectItem value="Left">Left</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="bowlingHand">Bowling Hand</Label>
-                <Select value={formData.bowlingHand || ''} onValueChange={(value) => setFormData({...formData, bowlingHand: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bowling hand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Right">Right</SelectItem>
-                    <SelectItem value="Left">Left</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>
@@ -261,7 +280,7 @@ export function PlayerForm({
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={onSubmit}>
+        <Button onClick={onSubmit} disabled={!isFormValid}>
           {isEditing ? 'Update Player' : 'Add Player'}
         </Button>
       </div>

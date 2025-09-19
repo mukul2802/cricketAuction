@@ -5,8 +5,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { PageType } from '../Router';
-import { playerService } from '../../lib/firebaseServices';
+import { PageType } from '../../src/components/Router';
+import { playerService, Player } from '../../lib/firebaseServices';
 import {
   Upload,
   FileText,
@@ -77,7 +77,87 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
     }
   };
 
-  function toPlayerPayload(row: any) {
+  const downloadSampleCsv = () => {
+    const headers = [
+      'Name',
+      'Skill',
+      'Batting Hand',
+      'Bowling Hand',
+      'Match',
+      'Run',
+      'Avg',
+      'Strike Rate',
+      'Overs',
+      'Wickets',
+      'Economy Rate',
+      'Base Price',
+      'Image URL'
+    ];
+    
+    const sampleData = [
+      [
+        'Virat Kohli',
+        'Batsman',
+        'Right',
+        'Right',
+        '254',
+        '12169',
+        '52.73',
+        '93.17',
+        '0',
+        '4',
+        '7.27',
+        '15000000',
+        'https://example.com/virat.jpg'
+      ],
+      [
+        'Jasprit Bumrah',
+        'Bowler',
+        'Right',
+        'Right',
+        '120',
+        '56',
+        '4.67',
+        '93.33',
+        '456.2',
+        '243',
+        '4.63',
+        '12000000',
+        'https://example.com/bumrah.jpg'
+      ],
+      [
+        'Hardik Pandya',
+        'All Rounder',
+        'Right',
+        'Right',
+        '92',
+        '1386',
+        '31.50',
+        '143.79',
+        '78.1',
+        '42',
+        '7.56',
+        '11000000',
+        'https://example.com/hardik.jpg'
+      ]
+    ];
+    
+    const csvContent = [headers, ...sampleData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'player_import_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+     document.body.removeChild(link);
+   };
+
+  function toPlayerPayload(row: any): Omit<Player, 'id' | 'createdAt' | 'updatedAt'> {
     const payload = {
       name: String(row.name || '').trim(),
       role: String(row.skill || '').trim(),
@@ -90,8 +170,11 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
       battingAvg: toNumber(row.avg),
       economy: toNumber(row.economyRate),
       strikeRate: toNumber(row.strikeRate),
-    } as Record<string, any>;
-    return pruneUndefined(payload);
+      overs: toNumber(row.overs) || 0,
+      battingHand: (row.battingHand && String(row.battingHand).trim()) || undefined,
+      bowlingHand: (row.bowlingHand && String(row.bowlingHand).trim()) || undefined,
+    };
+    return pruneUndefined(payload) as Omit<Player, 'id' | 'createdAt' | 'updatedAt'>;
   }
 
   function toNumber(v: any) {
@@ -223,7 +306,7 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full mt-3">
+                    <Button variant="outline" className="w-full mt-3" onClick={downloadSampleCsv}>
                       Download Template
                     </Button>
                   </CardContent>

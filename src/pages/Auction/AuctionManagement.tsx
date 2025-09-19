@@ -237,7 +237,7 @@ export function AuctionManagement({ onNavigate }: AuctionManagementProps) {
                   Set up a new cricket player auction.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="title" className="text-right">
                     Title
@@ -584,7 +584,7 @@ export function AuctionManagement({ onNavigate }: AuctionManagementProps) {
                   Update auction information.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-title" className="text-right">
                     Title

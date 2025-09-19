@@ -229,11 +229,13 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                   {myPlayers.map((player) => (
                     <div key={player.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <ImageWithFallback
-                          src={player.image || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=100&h=100&fit=crop&crop=face'}
-                          alt={player.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
+                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                          <ImageWithFallback
+                              src={player.image || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=100&h=100&fit=crop&crop=face'}
+                              alt={player.name}
+                              className="w-full h-full rounded-full object-cover object-top"
+                           />
+                        </div>
                         <div>
                           <p className="font-medium">{player.name}</p>
                           <div className="flex items-center gap-2">

@@ -13,7 +13,8 @@ import { PlayerForm } from '../ui/player-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
-import { playerService, Player, targetPlayerService } from '../../lib/firebaseServices';
+import { playerService, Player, targetPlayerService, teamService } from '../../lib/firebaseServices';
+import { deleteField } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import {
@@ -183,7 +184,10 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
         battingAvg: parseFloat(formData.average) || 0,
         bowlingAvg: 0,
         economy: parseFloat(formData.economyRate) || 0,
-        strikeRate: parseFloat(formData.strikeRate) || 0
+        strikeRate: parseFloat(formData.strikeRate) || 0,
+        overs: parseInt(formData.overs) || 0,
+        battingHand: formData.battingHand,
+        bowlingHand: formData.bowlingHand
       };
 
       await playerService.createPlayer(playerData);
@@ -218,9 +222,9 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
       average: player.battingAvg?.toString() || '',
       strikeRate: player.strikeRate?.toString() || '',
       economyRate: player.economy?.toString() || '',
-      overs: '',
-      battingHand: '',
-      bowlingHand: ''
+        overs: player.overs?.toString() || '0',
+        battingHand: (player as any).battingHand || '',
+        bowlingHand: (player as any).bowlingHand || ''
     });
     setShowEditDialog(true);
   };
@@ -233,7 +237,48 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
         toast.error('Sold Price must be a number');
         return;
       }
-      const playerData = {
+      
+      // Find team ID from team name if team is selected
+      let teamId = null;
+      if (formData.team && formData.team !== 'none' && formData.team !== '') {
+        const selectedTeam = teams.find(t => t.name === formData.team);
+        teamId = selectedTeam?.id || null;
+      }
+      
+      // Handle budget management for admin users
+      if (user?.role === 'admin') {
+        const newStatus = formData.status as 'active' | 'sold' | 'unsold' | 'pending';
+        const oldStatus = editingPlayer.status;
+        const soldPrice = formData.soldPrice ? parseInt(formData.soldPrice) : 0;
+        
+        // If changing from sold to unsold/active, refund the team budget
+        if (oldStatus === 'sold' && (newStatus === 'unsold' || newStatus === 'active') && editingPlayer.teamId && editingPlayer.finalPrice) {
+          const oldTeam = teams.find(t => t.id === editingPlayer.teamId);
+          if (oldTeam) {
+            await teamService.updateTeamBudget(oldTeam.id, -editingPlayer.finalPrice);
+            // Remove player from old team's players array
+            const updatedPlayers = oldTeam.players.filter(pid => pid !== editingPlayer.id);
+            await teamService.updateTeam(oldTeam.id, { players: updatedPlayers });
+          }
+        }
+        
+        // If changing to sold status, deduct from team budget
+        if (newStatus === 'sold' && teamId && soldPrice > 0) {
+          const newTeam = teams.find(t => t.id === teamId);
+          if (newTeam) {
+            if (newTeam.remainingBudget < soldPrice) {
+              toast.error(`${newTeam.name} doesn't have enough budget`);
+              return;
+            }
+            await teamService.updateTeamBudget(newTeam.id, soldPrice);
+            // Add player to new team's players array
+            const updatedPlayers = [...(newTeam.players || []), editingPlayer.id];
+            await teamService.updateTeam(newTeam.id, { players: updatedPlayers });
+          }
+        }
+      }
+      
+      const playerData: any = {
         name: formData.name,
         role: formData.role,
         basePrice: parseInt(formData.basePrice),
@@ -243,8 +288,27 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
         wickets: parseInt(formData.wickets) || 0,
         battingAvg: parseFloat(formData.average) || 0,
         economy: parseFloat(formData.economyRate) || 0,
-        strikeRate: parseFloat(formData.strikeRate) || 0
+        strikeRate: parseFloat(formData.strikeRate) || 0,
+        battingHand: formData.battingHand,
+        bowlingHand: formData.bowlingHand
       };
+
+      // Add admin-specific fields
+      if (user?.role === 'admin') {
+        playerData.status = (formData.status as 'active' | 'sold' | 'unsold' | 'pending') || 'active';
+        
+        // Handle team assignment based on status
+        if (formData.status === 'sold' && teamId) {
+          playerData.teamId = teamId;
+          if (formData.soldPrice) {
+            playerData.finalPrice = parseInt(formData.soldPrice);
+          }
+        } else if (formData.status === 'unsold' || formData.status === 'active') {
+          // Remove team and price fields for unsold/active players
+          playerData.teamId = deleteField();
+          playerData.finalPrice = deleteField();
+        }
+      }
 
       await playerService.updatePlayer(editingPlayer.id, playerData);
       toast.success('Player updated successfully');
@@ -282,7 +346,7 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
     // For team owners, use their team ID. For admins/managers, allow them to select a team
     let teamId = myTeam?.id;
     
-    if (!teamId && (user?.role === 'admin' || user?.role === 'manager')) {
+    if (!teamId && (user?.role === 'admin' || user?.role === 'owner')) {
       // For admin/manager without a team, use the first available team or prompt for selection
       if (teams.length > 0) {
         teamId = teams[0].id;
@@ -360,7 +424,7 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                     Add Player
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Add New Player</DialogTitle>
                     <DialogDescription>
@@ -461,6 +525,8 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                   <TableRow>
                     <TableHead>Player</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Batting Hand</TableHead>
+                    <TableHead>Bowling Hand</TableHead>
                     <TableHead>Stats</TableHead>
                     <TableHead>Base Price</TableHead>
                     <TableHead>Sold Price</TableHead>
@@ -474,16 +540,20 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                     <TableRow key={player.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <ImageWithFallback
-                            src={player.image}
-                            alt={player.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                            <ImageWithFallback
+                                src={player.image}
+                                alt={player.name}
+                                className="w-full h-full rounded-full object-cover object-top"
+                              />
+                          </div>
                           <div>
                             <p className="font-medium">{player.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {(player as any).nationality || 'N/A'}
-                            </p>
+                            {(player as any).nationality && (
+                              <p className="text-sm text-muted-foreground">
+                                {(player as any).nationality}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -493,14 +563,26 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        <span className="text-sm">
+                          {(player as any).battingHand || '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {(player as any).bowlingHand || '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">
                             {player.matches || 0} matches
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {(player.runs || 0) > 0 && `${player.runs} runs`}
-                            {(player.runs || 0) > 0 && (player.wickets || 0) > 0 && ', '}
+                            {(player.runs || 0) > 0 && ((player.wickets || 0) > 0 || (player.overs || 0) > 0) && ', '}
                             {(player.wickets || 0) > 0 && `${player.wickets} wickets`}
+                            {(player.wickets || 0) > 0 && (player.overs || 0) > 0 && ', '}
+                            {(player.overs || 0) > 0 && `${player.overs} overs`}
                           </div>
                         </div>
                       </TableCell>
@@ -584,7 +666,7 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
 
         {/* Edit Player Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Player</DialogTitle>
               <DialogDescription>

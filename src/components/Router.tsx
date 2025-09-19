@@ -9,7 +9,8 @@ import { UsersPage } from '../../components/pages/UsersPage';
 import { LiveAuctionPage } from '../../components/pages/LiveAuctionPage';
 import { PlayerImportPage } from '../../components/pages/PlayerImportPage';
 import { OtherTeamsPage } from '../../components/pages/OtherTeamsPage';
-import { SquadListPage } from '../../components/pages/SquadListPage';
+
+import { PublicAuctionDisplay } from './PublicAuctionDisplay';
 import { LoginPage } from '../pages/Auth/Login';
 
 export type PageType = 
@@ -20,8 +21,7 @@ export type PageType =
   | 'auction'
   | 'live-auction'
   | 'import'
-  | 'other-teams'
-  | 'squads';
+  | 'other-teams';
 
 export function Router() {
   const { isAuthenticated, user } = useAuth();
@@ -48,11 +48,14 @@ export function Router() {
       case 'users':
         return <UsersPage onNavigate={handleNavigate} />;
       case 'auction':
+        if (user?.role === 'owner') return <PublicAuctionDisplay onNavigate={handleNavigate} />;
         return <LiveAuctionPage onNavigate={handleNavigate} />;
       case 'live-auction':
+        if (user?.role === 'owner') return <PublicAuctionDisplay onNavigate={handleNavigate} />;
         return <LiveAuctionPage onNavigate={handleNavigate} />;
-      case 'squads':
-        return <SquadListPage onNavigate={handleNavigate} />;
+      case 'import':
+        return <PlayerImportPage onNavigate={handleNavigate} />;
+
       default:
         return <AdminDashboard onNavigate={handleNavigate} />;
     }
