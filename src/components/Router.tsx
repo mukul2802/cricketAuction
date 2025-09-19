@@ -9,6 +9,7 @@ import { UsersPage } from '../../components/pages/UsersPage';
 import { LiveAuctionPage } from '../../components/pages/LiveAuctionPage';
 import { PlayerImportPage } from '../../components/pages/PlayerImportPage';
 import { OtherTeamsPage } from '../../components/pages/OtherTeamsPage';
+import { SquadListPage } from '../../components/pages/SquadListPage';
 import { LoginPage } from '../pages/Auth/Login';
 
 export type PageType = 
@@ -19,7 +20,8 @@ export type PageType =
   | 'auction'
   | 'live-auction'
   | 'import'
-  | 'other-teams';
+  | 'other-teams'
+  | 'squads';
 
 export function Router() {
   const { isAuthenticated, user } = useAuth();
@@ -49,6 +51,8 @@ export function Router() {
         return <LiveAuctionPage onNavigate={handleNavigate} />;
       case 'live-auction':
         return <LiveAuctionPage onNavigate={handleNavigate} />;
+      case 'squads':
+        return <SquadListPage onNavigate={handleNavigate} />;
       default:
         return <AdminDashboard onNavigate={handleNavigate} />;
     }

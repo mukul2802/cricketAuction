@@ -40,6 +40,7 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
       return [
         ...baseItems,
         { id: 'teams' as PageType, label: 'Teams', icon: Trophy },
+        { id: 'squads' as PageType, label: 'All Squads', icon: Users },
         { id: 'users' as PageType, label: 'Users', icon: UserCheck },
         { id: 'import' as PageType, label: 'Import Players', icon: Upload },
       ];
@@ -49,6 +50,7 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
       return [
         { id: 'dashboard' as PageType, label: 'My Dashboard', icon: Star },
         { id: 'players' as PageType, label: 'All Players', icon: Users },
+        { id: 'squads' as PageType, label: 'All Squads', icon: Users },
         { id: 'auction' as PageType, label: 'Live Auction', icon: Gavel },
         { id: 'teams' as PageType, label: 'Other Teams', icon: Trophy },
       ];

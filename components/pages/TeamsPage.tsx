@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { PageType } from '../Router';
+import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
-import { teamService, userService, adminResetService, Team, User } from '../../lib/firebaseServices';
+import { teamService, userService, adminResetService, playerService, Team, User, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import {
   Trophy,
@@ -46,6 +46,9 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
   const [isResetting, setIsResetting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
+  const [showSquadModal, setShowSquadModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [squadPlayers, setSquadPlayers] = useState<Player[]>([]);
 
   useEffect(() => {
     loadTeams();
@@ -117,6 +120,21 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
     } finally {
       setIsResetting(false);
       setShowResetConfirm(false);
+    }
+  };
+
+  const openSquadView = async (team: Team) => {
+    try {
+      setSelectedTeam(team);
+      const allPlayers = await playerService.getAllPlayers();
+      const teamPlayers = allPlayers.filter(player => 
+        team.players && team.players.includes(player.id)
+      );
+      setSquadPlayers(teamPlayers);
+      setShowSquadModal(true);
+    } catch (error) {
+      console.error('Error loading squad:', error);
+      toast.error('Failed to load squad');
     }
   };
 
@@ -285,16 +303,26 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={(e) => {
                       e.preventDefault();
-                      openEditTeam(team);
+                      openSquadView(team);
                     }}>
-                      <Edit className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={(e) => {
-                      e.preventDefault();
-                      handleDeleteTeam(team);
-                    }}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {user?.role === 'admin' && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={(e) => {
+                          e.preventDefault();
+                          openEditTeam(team);
+                        }}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={(e) => {
+                          e.preventDefault();
+                          handleDeleteTeam(team);
+                        }}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -414,6 +442,68 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
           confirmText="Delete Team"
           variant="destructive"
         />
+
+        <Dialog open={showSquadModal} onOpenChange={setShowSquadModal}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                {selectedTeam?.name} Squad
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Players List */}
+              <div className="space-y-3">
+                {squadPlayers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No players in this squad yet</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {squadPlayers.map((player) => {
+                      const getRoleColor = (role: string) => {
+                        switch (role.toLowerCase()) {
+                          case 'batsman': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+                          case 'bowler': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                          case 'wicket-keeper': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+                          case 'all-rounder': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                          default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+                        }
+                      };
+
+                      return (
+                        <div key={player.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                              <Users className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                              <h5 className="font-medium">{player.name}</h5>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className={`text-xs ${getRoleColor(player.role)}`}>
+                                   {player.role}
+                                 </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-primary">
+                              ₹{((player.finalPrice || 0) / 10000000).toFixed(1)}Cr
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Base: ₹{((player.basePrice || 0) / 10000000).toFixed(1)}Cr
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

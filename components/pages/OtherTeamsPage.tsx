@@ -4,14 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
 import { PageType } from '../../src/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { teamService, playerService, Team, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import {
-  Trophy,
   IndianRupee,
   Users,
   Star,
@@ -30,6 +31,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
   const [teamsData, setTeamsData] = useState<Team[]>([]);
   const [playersData, setPlayersData] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   // Load teams and their players from Firebase
   useEffect(() => {
@@ -92,6 +94,8 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
       default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     }
   };
+
+
 
   return (
     <MainLayout currentPage="teams" onNavigate={onNavigate}>
@@ -167,7 +171,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-primary" />
+                    <Users className="w-5 h-5 text-primary" />
                     {team.name}
                   </CardTitle>
                   <div className="text-right">

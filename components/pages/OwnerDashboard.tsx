@@ -251,9 +251,6 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                         <p className="font-medium text-primary">
                           ₹{((player.finalPrice || player.basePrice) / 10000000).toFixed(1)}Cr
                         </p>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
