@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       const allUsers = await authApi.getAllUsers();
@@ -63,13 +63,16 @@ export function UserManagement({ onNavigate }: UserManagementProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Memoize search term for better performance
+  const searchTermLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
+  
   // Filter and search users
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = user.name.toLowerCase().includes(searchTermLower) ||
+                            user.email.toLowerCase().includes(searchTermLower);
       const matchesRole = roleFilter === 'all' || user.role === roleFilter;
       
       return matchesSearch && matchesRole;

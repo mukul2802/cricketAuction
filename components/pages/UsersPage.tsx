@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-import { PageType } from '../../src/components/Router';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService, authService, User as AppUser } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
@@ -43,9 +43,21 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
 
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const list = await userService.getAllUsers();
+      setUsers(list);
+    } catch (e) {
+      // ignore list error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   // Set up real-time listener for users
   useEffect(() => {
@@ -56,18 +68,6 @@ export function UsersPage({ onNavigate }: UsersPageProps) {
 
     return () => unsubscribe();
   }, []);
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const list = await userService.getAllUsers();
-      setUsers(list);
-    } catch (e) {
-      // ignore list error
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddUser = () => {
     (async () => {

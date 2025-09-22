@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { PageType } from '../../src/components/Router';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { PageType } from '@/components/Router';
 import {
   Trophy,
   Users,
@@ -29,7 +29,8 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const getNavigationItems = () => {
+  // Memoize navigation items based on user role
+  const navigationItems = useMemo(() => {
     const baseItems = [
       { id: 'dashboard' as PageType, label: 'Dashboard', icon: BarChart3 },
       { id: 'players' as PageType, label: 'Players', icon: Users },
@@ -55,18 +56,17 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
     }
 
     return baseItems;
-  };
+  }, [user?.role]);
 
-  const navigationItems = getNavigationItems();
-
-  const getRoleColor = (role: string) => {
+  // Memoize role color function
+  const getRoleColor = useCallback((role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-500/10 text-red-400 border-red-500/20';
       case 'owner': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'manager': return 'bg-green-500/10 text-green-400 border-green-500/20';
       default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     }
-  };
+  }, []);
 
   return (
     <div className="flex h-screen bg-background">

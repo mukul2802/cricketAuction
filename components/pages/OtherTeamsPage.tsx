@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { PageType } from '../../src/components/Router';
+import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { teamService, playerService, Team, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';

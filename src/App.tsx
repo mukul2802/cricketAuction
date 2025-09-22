@@ -1,7 +1,7 @@
 import React from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { Router } from './components/Router';
-import { Toaster } from '../components/ui/sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicAuctionPage } from './components/pages/PublicAuctionPage';
 

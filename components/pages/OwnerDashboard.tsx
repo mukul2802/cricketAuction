@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { PageType } from '../../src/components/Router';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { playerService, Player, targetPlayerService, TargetPlayer, auctionService, AuctionRound } from '../../lib/firebaseServices';

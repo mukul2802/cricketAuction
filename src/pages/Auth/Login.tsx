@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Trophy, Shield } from 'lucide-react';
 import { authApi } from '../../api';
 import { DEMO_ACCOUNTS, ERROR_MESSAGES } from '../../constants';

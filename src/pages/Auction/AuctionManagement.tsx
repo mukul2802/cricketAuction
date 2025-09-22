@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,7 @@ export function AuctionManagement({ onNavigate }: AuctionManagementProps) {
     loadAuctions();
   }, []);
 
-  const loadAuctions = async () => {
+  const loadAuctions = useCallback(async () => {
     try {
       setLoading(true);
       const allAuctions = await auctionApi.getAllAuctions();
@@ -68,13 +68,16 @@ export function AuctionManagement({ onNavigate }: AuctionManagementProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Memoize search and filter operations for better performance
+  const searchTermLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
+  
   // Filter and search auctions
   const filteredAuctions = useMemo(() => {
     return auctions.filter(auction => {
-      const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           auction.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = auction.title.toLowerCase().includes(searchTermLower) ||
+                            auction.description.toLowerCase().includes(searchTermLower);
       const matchesStatus = statusFilter === 'all' || auction.status === statusFilter;
       
       return matchesSearch && matchesStatus;

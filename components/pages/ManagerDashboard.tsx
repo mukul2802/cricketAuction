@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { PageType } from '../Router';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { PageType } from '@/components/Router';
 import { auctionService, playerService, teamService } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
 import { Play, Trophy, Target, Home, Users, FileSpreadsheet, Maximize, Minimize } from 'lucide-react';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound } from '../../lib/firebaseServices';

@@ -1,6 +1,3 @@
-// Dashboard pages
-export * from './Dashboard';
-
 // Auth pages
 export * from './Auth';
 

@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useRef, startTransition, useMemo } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Label } from '../ui/label';
-import { PageType } from '../../src/components/Router';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound as AuctionRoundType } from '../../lib/firebaseServices';
-import Shimmer, { ShimmerText, ShimmerAvatar, ShimmerButton } from '../ui/shimmer';
+import Shimmer, { ShimmerText, ShimmerAvatar, ShimmerButton } from '@/components/ui/shimmer';
 import { toast } from 'sonner';
 import {
   Check,
@@ -550,7 +550,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
 
   // Use real players data instead of mock data
   // For current round, show players that are eligible for this round
-  const activeRoundPlayers = players;
+  const activeRoundPlayers = useMemo(() => players, [players]);
   
   // Use state for currentPlayer to prevent flicker during transitions
   const [stableCurrentPlayer, setStableCurrentPlayer] = useState<Player | null>(null);
@@ -571,38 +571,65 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
   }, []);
   
   // Always show stableCurrentPlayer to prevent flickering - never show undefined during transitions
-  const currentPlayer: Player | undefined = stableCurrentPlayer || undefined;
+  const currentPlayer: Player | undefined = useMemo(() => stableCurrentPlayer || undefined, [stableCurrentPlayer]);
   
-  // Debug logging for round number display
-  console.log('🔍 LiveAuctionPage render state:', {
+  // Debug logging for round number display (memoized to prevent excessive logging)
+  const debugState = useMemo(() => ({
     currentRoundNumber: currentRound?.round,
     currentRoundStatus: currentRound?.status,
     playersLeft: currentRound?.playersLeft,
     totalPlayers: players.length,
     currentPlayerName: currentPlayer?.name
-  });
+  }), [currentRound?.round, currentRound?.status, currentRound?.playersLeft, players.length, currentPlayer?.name]);
   
-  // Debug button render conditions
+  console.log('🔍 LiveAuctionPage render state:', debugState);
+  
+  // Debug button render conditions (memoized to prevent excessive logging)
+  const buttonDebugState = useMemo(() => ({
+    userRole: user?.role,
+    hasCurrentPlayer: !!currentPlayer,
+    currentPlayerName: currentPlayer?.name,
+    selectedTeam,
+    isProcessing,
+    confirmSaleDisabled: !selectedTeam || isProcessing,
+    markUnsoldDisabled: isProcessing,
+    teamsCount: teams.length
+  }), [user?.role, currentPlayer, selectedTeam, isProcessing, teams.length]);
+  
   useEffect(() => {
-    console.log('🔍 Button render conditions:', {
-      userRole: user?.role,
-      hasCurrentPlayer: !!currentPlayer,
-      currentPlayerName: currentPlayer?.name,
-      selectedTeam,
-      isProcessing,
-      confirmSaleDisabled: !selectedTeam || isProcessing,
-      markUnsoldDisabled: isProcessing,
-      teamsCount: teams.length
-    });
-  }, [user?.role, currentPlayer, selectedTeam, isProcessing, teams.length]);
+    console.log('🔍 Button render conditions:', buttonDebugState);
+  }, [buttonDebugState]);
   
+  // Memoize team data for performance
+  const topTeams = useMemo(() => 
+    teams.slice(0, 5).map(team => ({
+      id: team.id,
+      abbreviation: team.name.split(' ').map(word => word[0]).join('').slice(0, 2),
+      budgetDisplay: (team.remainingBudget / 10000000).toFixed(2)
+    })), [teams]
+  );
+
+  // Memoize team options for select dropdown
+  const teamOptions = useMemo(() => 
+    teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      displayText: `${team.name} (₹${(team.remainingBudget / 10000000).toFixed(2)}cr)`
+    })), [teams]
+  );
+
+  // Memoize auction state conditions
+  const auctionStateConditions = useMemo(() => ({
+    isAuctionCompleted: currentRound?.status === 'completed',
+    isWaitingForAdmin: currentRound?.status === 'waiting_for_admin',
+    isAuctionNotStarted: currentRound && !auctionStarted && players.length > 0,
+    isAuctionNotLive: !currentRound || currentRound.status === 'pending'
+  }), [currentRound?.status, auctionStarted, players.length]);
+
   // Only show no player state if we're certain there are no players and not in a loading state
   // Prevent flickering by being more conservative about when to show this state
   if (!currentPlayer && !loading && players.length === 0) {
-    const isAuctionCompleted = currentRound?.status === 'completed';
-    const isWaitingForAdmin = currentRound?.status === 'waiting_for_admin';
-    const isAuctionNotStarted = currentRound && !auctionStarted && players.length > 0;
-    const isAuctionNotLive = !currentRound || currentRound.status === 'pending';
+    const { isAuctionCompleted, isWaitingForAdmin, isAuctionNotStarted, isAuctionNotLive } = auctionStateConditions;
     
     // Removed transition loading state that was causing flickering
     
@@ -1402,13 +1429,13 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           )}
           {/* Display 4-5 teams in single row */}
           <div className="grid grid-cols-4 lg:grid-cols-5 gap-2">
-            {teams.slice(0, 5).map((team) => (
+            {topTeams.map((team) => (
               <div key={team.id} className="bg-black/30 backdrop-blur-sm rounded-lg px-2 py-1 border border-gray-700/50 text-center">
                 <div className="text-xs font-bold text-primary mb-1">
-                  {team.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
+                  {team.abbreviation}
                 </div>
                 <div className="text-xs text-white">
-                  ₹{(team.remainingBudget / 10000000).toFixed(2)}Cr
+                  ₹{team.budgetDisplay}Cr
                 </div>
               </div>
             ))}
@@ -1533,9 +1560,9 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                                 <SelectValue placeholder="Select team" className="text-white" />
                               </SelectTrigger>
                               <SelectContent className="bg-gray-800 border-gray-600">
-                                {teams.map((team) => (
+                                {teamOptions.map((team) => (
                                   <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                                    {team.name} (₹{(team.remainingBudget / 10000000).toFixed(2)}cr)
+                                    {team.displayText}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { PageType } from '../../src/components/Router';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
 import { teamService, userService, adminResetService, playerService, Team, User, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
@@ -19,10 +19,10 @@ import {
   Trash2,
   RotateCcw
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { ConfirmationDialog } from '../ui/confirmation-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface TeamsPageProps {
   onNavigate: (page: PageType) => void;
@@ -422,7 +422,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
            onOpenChange={setShowResetConfirm}
            title="Confirm Reset Action"
            description={
-             resetType === 'fullReset' ? 'This will reset all teams to initial state and make all players available for auction. This action cannot be undone.' :
+             resetType === 'fullReset' ? 'This will reset all teams to initial state AND make all players available for auction. This action cannot be undone.' :
              resetType === 'teams' ? 'This will reset all teams to their initial state (empty rosters, full budgets). This action cannot be undone.' :
              resetType === 'players' ? 'This will make all players available for auction again. This action cannot be undone.' :
              'This will permanently delete all players from the database. This action cannot be undone.'

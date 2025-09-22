@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { TeamBudgetCompact } from '../ui/team-budget-compact';
+import { TeamBudgetCompact } from '@/components/ui/team-budget-compact';
 import { IndianRupee, Timer, Users, Trophy } from 'lucide-react';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
