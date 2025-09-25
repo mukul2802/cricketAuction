@@ -48,5 +48,5 @@ export { Textarea } from './textarea';
 export { Toggle, toggleVariants } from './toggle';
 export { ToggleGroup, ToggleGroupItem } from './toggle-group';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-export { useMobile } from './use-mobile';
+export { useIsMobile } from './use-mobile';
 export { cn } from './utils';

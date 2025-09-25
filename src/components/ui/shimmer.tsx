@@ -88,4 +88,5 @@ export const ShimmerButton: React.FC<ShimmerButtonProps> = ({ className }) => {
   );
 };
 
+export { Shimmer };
 export default Shimmer;
