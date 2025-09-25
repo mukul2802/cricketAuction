@@ -1,8 +1,14 @@
+// React hooks for component state and performance optimization
 import React, { useMemo, useCallback } from 'react';
+import { useState } from 'react';
+
+// Authentication context and UI components
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageType } from '@/components/Router';
+
+// Icons for navigation and UI elements
 import {
   Trophy,
   Users,
@@ -17,26 +23,53 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { useState } from 'react';
 
+// Props interface for the MainLayout component
 interface MainLayoutProps {
-  children: React.ReactNode;
-  currentPage: PageType;
-  onNavigate: (page: PageType) => void;
+  children: React.ReactNode; // Page content to be rendered inside the layout
+  currentPage: PageType; // Currently active page for navigation highlighting
+  onNavigate: (page: PageType) => void; // Function to handle navigation between pages
 }
 
+/**
+ * MainLayout Component
+ * 
+ * This is the primary layout wrapper for the entire application that provides:
+ * - Responsive sidebar navigation with role-based menu items
+ * - User authentication status and profile display
+ * - Mobile-friendly hamburger menu for smaller screens
+ * - Consistent header and navigation across all pages
+ * - Role-based access control for different user types
+ * 
+ * The layout adapts based on user roles (admin, owner, manager) to show
+ * appropriate navigation options and features.
+ */
 export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProps) {
-  const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Authentication state and user information
+  const { user, logout } = useAuth(); // Get current user and logout function
+  
+  // Mobile sidebar state for responsive design
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Controls mobile sidebar visibility
 
-  // Memoize navigation items based on user role
+  /**
+   * Memoized navigation items based on user role
+   * 
+   * This function dynamically generates navigation menu items based on the user's role:
+   * - Admin: Full access to all features (teams, users, import, etc.)
+   * - Owner: Team-focused features (dashboard, players, auction, other teams)
+   * - Default: Basic features (dashboard, players, auction)
+   * 
+   * Uses useMemo for performance optimization to prevent recalculation on every render.
+   */
   const navigationItems = useMemo(() => {
+    // Base navigation items available to all users
     const baseItems = [
       { id: 'dashboard' as PageType, label: 'Dashboard', icon: BarChart3 },
       { id: 'players' as PageType, label: 'Players', icon: Users },
       { id: 'auction' as PageType, label: 'Live Auction', icon: Gavel },
     ];
 
+    // Admin users get full access to management features
     if (user?.role === 'admin') {
       return [
         ...baseItems,
@@ -46,6 +79,7 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
       ];
     }
 
+    // Team owners get personalized dashboard and team-focused features
     if (user?.role === 'owner') {
       return [
         { id: 'dashboard' as PageType, label: 'My Dashboard', icon: Star },
@@ -55,18 +89,29 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
       ];
     }
 
+    // Default navigation for other user types
     return baseItems;
-  }, [user?.role]);
+  }, [user?.role]); // Recalculate when user role changes
 
-  // Memoize role color function
+  /**
+   * Memoized function to get role-specific color classes
+   * 
+   * Returns appropriate Tailwind CSS classes for styling user role badges:
+   * - Admin: Red color scheme (highest authority)
+   * - Owner: Blue color scheme (team ownership)
+   * - Manager: Green color scheme (team management)
+   * - Default: Gray color scheme (fallback for other roles)
+   * 
+   * Uses useCallback to prevent function recreation on every render.
+   */
   const getRoleColor = useCallback((role: string) => {
     switch (role) {
-      case 'admin': return 'bg-red-500/10 text-red-400 border-red-500/20';
-      case 'owner': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'manager': return 'bg-green-500/10 text-green-400 border-green-500/20';
-      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+      case 'admin': return 'bg-red-500/10 text-red-400 border-red-500/20'; // Red for admin authority
+      case 'owner': return 'bg-blue-500/10 text-blue-400 border-blue-500/20'; // Blue for team ownership
+      case 'manager': return 'bg-green-500/10 text-green-400 border-green-500/20'; // Green for management
+      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20'; // Gray for unknown roles
     }
-  }, []);
+  }, []); // No dependencies - function logic is static
 
   return (
     <div className="flex h-screen bg-background">

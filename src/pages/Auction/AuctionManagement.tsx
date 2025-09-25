@@ -1,4 +1,7 @@
+// React hooks for component state and performance optimization
 import React, { useState, useMemo, useCallback } from 'react';
+
+// UI components for the auction management interface
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
+// Custom hooks and API services
 import { useAuth, useTeams, usePlayers } from '@/hooks';
 import { auctionApi } from '@/api/auction';
 import { Auction, AuctionStatus, Player, Team } from '@/types';
+
+// Icons for the auction management interface
 import {
   Search,
   Filter,
@@ -28,61 +35,102 @@ import {
   Timer
 } from 'lucide-react';
 
+// Props interface for the AuctionManagement component
 interface AuctionManagementProps {
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: string) => void; // Optional navigation function to switch between pages
 }
 
+/**
+ * AuctionManagement Component
+ * 
+ * This component provides a comprehensive interface for managing cricket auctions:
+ * - View all created auctions with their status and details
+ * - Create new auctions with customizable parameters
+ * - Edit existing auction configurations
+ * - Delete auctions that are no longer needed
+ * - Filter and search through auctions
+ * - Monitor auction progress and statistics
+ * 
+ * Only accessible to admin users who have permission to manage auctions.
+ */
 export function AuctionManagement({ onNavigate }: AuctionManagementProps) {
-  const { user } = useAuth();
-  const { teams } = useTeams();
-  const { players } = usePlayers();
-  const [auctions, setAuctions] = useState<Auction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingAuction, setEditingAuction] = useState<Auction | null>(null);
+  // Authentication and data hooks
+  const { user } = useAuth(); // Current logged-in user information
+  const { teams } = useTeams(); // All teams participating in auctions
+  const { players } = usePlayers(); // All players available for auctions
+  
+  // Auction data state
+  const [auctions, setAuctions] = useState<Auction[]>([]); // List of all auctions
+  const [loading, setLoading] = useState(true); // Loading state for initial data fetch
+  
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState(''); // Search query for auction titles/descriptions
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // Filter auctions by status
+  
+  // Dialog and form state
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false); // Controls "Add Auction" dialog visibility
+  const [editingAuction, setEditingAuction] = useState<Auction | null>(null); // Auction currently being edited
+  
+  // New auction form data with default values
   const [newAuction, setNewAuction] = useState({
-    title: '',
-    description: '',
-    startTime: '',
-    endTime: '',
-    playerIds: [] as string[],
-    maxTeams: 8,
-    baseBudget: 100000000, // 10 crores
-    status: 'scheduled' as AuctionStatus
+    title: '', // Auction name/title
+    description: '', // Detailed auction description
+    startTime: '', // Scheduled start date and time
+    endTime: '', // Scheduled end date and time
+    playerIds: [] as string[], // List of player IDs to include in this auction
+    maxTeams: 8, // Maximum number of teams that can participate
+    baseBudget: 100000000, // Starting budget for each team (10 crores in rupees)
+    status: 'scheduled' as AuctionStatus // Initial status when creating new auction
   });
 
-  // Load auctions on component mount
+  // Load auctions when component first mounts
   React.useEffect(() => {
     loadAuctions();
   }, []);
 
+  /**
+   * Loads all auctions from the database
+   * 
+   * This function fetches the complete list of auctions and updates the component state.
+   * It handles loading states and error scenarios gracefully.
+   */
   const loadAuctions = useCallback(async () => {
     try {
-      setLoading(true);
-      const allAuctions = await auctionApi.getAllAuctions();
-      setAuctions(allAuctions);
+      setLoading(true); // Show loading indicator while fetching data
+      const auctionsData = await auctionApi.getAllAuctions(); // Fetch auctions from API
+      setAuctions(auctionsData); // Update state with fetched auctions
     } catch (error) {
-      console.error('Error loading auctions:', error);
+      console.error('Error loading auctions:', error); // Log any errors for debugging
     } finally {
-      setLoading(false);
+      setLoading(false); // Hide loading indicator regardless of success/failure
     }
   }, []);
 
   // Memoize search and filter operations for better performance
   const searchTermLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
   
-  // Filter and search auctions
+  /**
+   * Memoized search and filter logic for auctions
+   * 
+   * This optimized function filters the auction list based on:
+   * - Search term: matches auction title or description (case-insensitive)
+   * - Status filter: shows all auctions or filters by specific status
+   * 
+   * Uses useMemo to prevent unnecessary recalculations on every render.
+   */
   const filteredAuctions = useMemo(() => {
     return auctions.filter(auction => {
-      const matchesSearch = auction.title.toLowerCase().includes(searchTermLower) ||
-                            auction.description.toLowerCase().includes(searchTermLower);
+      // Check if auction title or description contains the search term
+      const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          auction.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Check if auction status matches the selected filter (or show all)
       const matchesStatus = statusFilter === 'all' || auction.status === statusFilter;
       
+      // Return auctions that match both search and status criteria
       return matchesSearch && matchesStatus;
     });
-  }, [auctions, searchTerm, statusFilter]);
+  }, [auctions, searchTerm, statusFilter]); // Recalculate only when these dependencies change
 
   // Get status badge color
   const getStatusBadgeVariant = (status: AuctionStatus) => {

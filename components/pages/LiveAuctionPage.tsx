@@ -1,4 +1,7 @@
+// React and core hooks for component state management and lifecycle
 import React, { useState, useEffect, useCallback, useRef, startTransition, useMemo } from 'react';
+
+// Layout and UI components for the auction interface
 import { MainLayout } from '../layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +11,18 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+
+// Application routing and authentication
 import { PageType } from '@/components/Router';
 import { useAuth } from '../../contexts/AuthContext';
+
+// Custom components and services
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound as AuctionRoundType } from '../../lib/firebaseServices';
 import Shimmer, { ShimmerText, ShimmerAvatar, ShimmerButton } from '@/components/ui/shimmer';
 import { toast } from 'sonner';
+
+// Icons for the auction interface
 import {
   Check,
   X,
@@ -30,48 +39,79 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 
+// Props interface for the LiveAuctionPage component
 interface LiveAuctionPageProps {
-  onNavigate: (page: PageType) => void;
+  onNavigate: (page: PageType) => void; // Function to navigate between different pages
 }
 
-// AuctionRound interface is now imported from firebaseServices
-
+/**
+ * LiveAuctionPage Component
+ * 
+ * This is the main auction management interface where administrators can:
+ * - View and navigate through players available for auction
+ * - Start and manage auction rounds
+ * - Assign players to teams with final prices
+ * - Monitor auction progress and statistics
+ * - Control the auction flow (start, pause, next round)
+ */
 export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate }: LiveAuctionPageProps) {
   
+  // Authentication and team data from context
   const { user, teams } = useAuth();
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [showSoldDialog, setShowSoldDialog] = useState(false);
-  const [soldPrice, setSoldPrice] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentRound, setCurrentRound] = useState<AuctionRoundType | null>(null);
+  
+  // Player navigation and selection state
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0); // Index of currently displayed player
+  const [showSoldDialog, setShowSoldDialog] = useState(false); // Controls the "Mark as Sold" dialog visibility
+  const [soldPrice, setSoldPrice] = useState(''); // Final price when player is sold
+  const [selectedTeam, setSelectedTeam] = useState(''); // Team selected to buy the current player
+  const [isProcessing, setIsProcessing] = useState(false); // Loading state for async operations
+  
+  // Auction round management
+  const [currentRound, setCurrentRound] = useState<AuctionRoundType | null>(null); // Current active auction round
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isPlayerTransitioning, setIsPlayerTransitioning] = useState(false);
+  // UI state management
+  const [isFullscreen, setIsFullscreen] = useState(false); // Fullscreen mode toggle
+  const [showSidebar, setShowSidebar] = useState(true); // Sidebar visibility toggle
+  const [players, setPlayers] = useState<Player[]>([]); // List of all players in the auction
+  const [loading, setLoading] = useState(true); // Initial data loading state
+  const [isPlayerTransitioning, setIsPlayerTransitioning] = useState(false); // Animation state for player transitions
 
-  const [auctionStarted, setAuctionStarted] = useState(false);
-  const [hasPlayersForNextRound, setHasPlayersForNextRound] = useState(true);
-  const [allPlayersSold, setAllPlayersSold] = useState(false);
-  const [remainingPlayersCount, setRemainingPlayersCount] = useState({unsold: 0, active: 0, total: 0});
-  const mountedRef = useRef(true);
+  // Auction progress tracking
+  const [auctionStarted, setAuctionStarted] = useState(false); // Whether auction has been initiated
+  const [hasPlayersForNextRound, setHasPlayersForNextRound] = useState(true); // Check if more rounds are possible
+  const [allPlayersSold, setAllPlayersSold] = useState(false); // Check if auction is complete
+  const [remainingPlayersCount, setRemainingPlayersCount] = useState({unsold: 0, active: 0, total: 0}); // Player count statistics
+  
+  // Component lifecycle management
+  const mountedRef = useRef(true); // Prevents state updates after component unmount
 
 
-  // Check auction status for round progression
+  /**
+   * Check Auction Status
+   * 
+   * Monitors the current state of the auction to determine:
+   * - Whether there are players available for the next round
+   * - If all players have been sold (auction complete)
+   * - Current count of remaining players by status
+   * 
+   * This function is called periodically to update the UI and enable/disable
+   * auction controls based on the current auction progress.
+   */
   const checkAuctionStatus = useCallback(async () => {
     try {
+      // Fetch auction status data in parallel for better performance
       const [hasPlayers, allSold, remainingCount] = await Promise.all([
-        auctionService.hasPlayersForNextRound(),
-        auctionService.areAllPlayersSold(),
-        auctionService.getRemainingPlayersCount()
+        auctionService.hasPlayersForNextRound(), // Check if more rounds are possible
+        auctionService.areAllPlayersSold(), // Check if auction is complete
+        auctionService.getRemainingPlayersCount() // Get detailed player count statistics
       ]);
       
+      // Update component state with fetched data
       setHasPlayersForNextRound(hasPlayers);
       setAllPlayersSold(allSold);
       setRemainingPlayersCount(remainingCount);
       
+      // Log status for debugging and monitoring
       console.log('🔍 Auction Status Check:', {
         hasPlayersForNextRound: hasPlayers,
         allPlayersSold: allSold,
@@ -82,22 +122,34 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     }
   }, []);
 
-  // Handler functions
+  /**
+   * Handle Start Next Round
+   * 
+   * Initiates a new auction round by:
+   * - Creating a new round in the database
+   * - Resetting player statuses for the new round
+   * - Loading eligible players for bidding
+   * - Updating the UI to reflect the new round state
+   * 
+   * This function is called when the admin wants to start a new round
+   * after the current round is completed or when starting the first round.
+   */
   const handleStartNextRound = useCallback(async () => {
+    // Ensure we have a current round context
     if (!currentRound) return;
     
-
-    
     try {
-      // Use the service method which handles player reset internally
+      // Create new auction round and reset player statuses
+      // This service method handles all the backend logic for round creation
       const newRoundId = await auctionService.startNextRound();
       
+      // Check if round creation was successful
       if (!newRoundId) {
         toast.error('No players available for next round');
         return;
       }
       
-      // Get the new round data
+      // Fetch the newly created round data from the database
       const newRound = await auctionService.getCurrentRound();
       console.log('🔍 New round data from handleStartNextRound:', {
         newRoundId: newRound?.id,

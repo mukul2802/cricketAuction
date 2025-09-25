@@ -1,16 +1,72 @@
 # Cricket Player Bidding System
 
-A comprehensive web application for managing cricket player auctions with role-based access for Admin, Manager, and Owner users. Built with React, TypeScript, Tailwind CSS, and Firebase.
+A comprehensive web application for managing cricket player auctions with role-based access for Admin and Owner users. Built with React, TypeScript, Tailwind CSS, and Firebase, this system provides a complete solution for organizing and conducting cricket player auctions with real-time bidding capabilities.
 
-## Features
+## 🏏 Project Overview
 
-- **Role-based Authentication**: Admin, Manager, and Owner access levels
-- **Player Management**: Add, edit, delete, and import players with statistics
-- **Team Management**: Create and manage team budgets and rosters
-- **Live Auction Interface**: Real-time bidding with offline functionality
-- **Responsive Design**: Works on desktop and mobile devices
-- **Firebase Integration**: Real-time database and authentication
-- **Public Auction Display**: External display screen for auction events
+The Cricket Player Bidding System is designed to streamline the process of cricket player auctions, commonly used in leagues like IPL, CPL, and other franchise-based cricket tournaments. The application provides different interfaces for administrators who manage the auction and team owners who participate in bidding.
+
+## ✨ Key Features
+
+### 🔐 Authentication & User Management
+- **Role-based Authentication**: Secure login system with Admin and Owner access levels
+- **User Management**: Admin can create, edit, and manage user accounts
+- **Team Assignment**: Owners are automatically linked to their respective teams
+- **Session Management**: Secure authentication with Firebase Auth
+
+### 👥 Player Management
+- **Comprehensive Player Database**: Store detailed player information including statistics
+- **Player Profiles**: Name, role, age, matches played, batting/bowling statistics
+- **Performance Metrics**: Batting average, bowling average, strike rate, economy rate
+- **Player Import**: Bulk import players from CSV/Excel files
+- **Player Status Tracking**: Active, Sold, Unsold, Pending statuses
+- **Search & Filter**: Advanced filtering by role, status, and search functionality
+
+### 🏆 Team Management
+- **Team Creation**: Set up teams with names, initials, and logos
+- **Budget Management**: Configure team budgets and track spending
+- **Roster Management**: View team compositions and player assignments
+- **Budget Tracking**: Real-time budget updates during auctions
+- **Team Statistics**: Performance analytics and spending patterns
+
+### 🎯 Live Auction System
+- **Real-time Auction Interface**: Interactive bidding system for administrators
+- **Round-based Auctions**: Organize auctions in multiple rounds
+- **Player Presentation**: Display current player with detailed statistics
+- **Bidding Controls**: Start, pause, and manage auction rounds
+- **Instant Player Assignment**: Assign players to teams with price tracking
+- **Auction Statistics**: Live stats including players sold, remaining budget
+- **Fullscreen Mode**: Distraction-free auction management
+
+### 📊 Public Display Features
+- **Public Auction Display**: External screen for audience viewing
+- **Open Auction Display**: Simplified view for public events
+- **Real-time Updates**: Live synchronization of auction progress
+- **Professional Presentation**: Clean, broadcast-ready interface
+
+### 🎯 Target Player System
+- **Player Targeting**: Owners can mark players as high, medium, or low priority
+- **Strategic Planning**: Pre-auction team strategy development
+- **Notes & Comments**: Add strategic notes for targeted players
+
+### 📈 Analytics & Reporting
+- **Auction Statistics**: Comprehensive auction performance metrics
+- **Team Analytics**: Budget utilization and player acquisition analysis
+- **Player Market Analysis**: Price trends and bidding patterns
+- **Real-time Dashboards**: Live updates during active auctions
+
+### 🔧 Administrative Features
+- **Auction Management**: Create, schedule, and control multiple auctions
+- **System Configuration**: Manage auction parameters and settings
+- **Data Export**: Export auction results and player data
+- **Backup & Recovery**: Secure data management with Firebase
+
+### 📱 User Experience
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Modern UI**: Clean, intuitive interface built with Tailwind CSS
+- **Performance Optimized**: Fast loading with React 18 and Vite
+- **Accessibility**: WCAG compliant design principles
+- **Real-time Notifications**: Instant updates using Sonner toast notifications
 
 ## Tech Stack
 

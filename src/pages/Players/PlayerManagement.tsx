@@ -1,4 +1,7 @@
+// React hooks for component state and performance optimization
 import React, { useState, useMemo } from 'react';
+
+// Layout and UI components
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,10 +12,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Reusable components for data display and interaction
 import { StatsCard, SearchBar, DataTable, LoadingState, EmptyState, AddButton, EditButton, DeleteButton, type Column, type Action } from '@/components/common';
+
+// Custom hooks and type definitions
 import { usePlayers } from '@/hooks';
 import { Player } from '@/types';
 import { PageType } from '@/components/Router';
+
+// Icons for the player management interface
 import {
   Plus,
   Edit,
@@ -25,45 +34,86 @@ import {
   MapPin
 } from 'lucide-react';
 
+// Props interface for the PlayerManagement component
 interface PlayerManagementProps {
-  onNavigate: (page: PageType) => void;
+  onNavigate: (page: PageType) => void; // Navigation function to switch between different pages
 }
 
+/**
+ * PlayerManagement Component
+ * 
+ * This component provides a comprehensive interface for managing cricket players:
+ * - View all registered players with their details and statistics
+ * - Add new players to the database with complete information
+ * - Edit existing player profiles and update their data
+ * - Delete players from the system
+ * - Search and filter players by name, role, and status
+ * - View player statistics including sold/unsold status
+ * 
+ * Features advanced filtering, real-time search, and bulk operations.
+ */
 export function PlayerManagement({ onNavigate }: PlayerManagementProps) {
-  const { players, loading, refetch } = usePlayers();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  // Data hooks for players and loading state
+  const { players, loading, refetch } = usePlayers(); // Get all players data with loading state
+  
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState(''); // Search query for player names and roles
+  const [roleFilter, setRoleFilter] = useState<string>('all'); // Filter players by their playing role
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // Filter by sold/unsold status
+  
+  // Dialog and form state
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false); // Controls "Add Player" dialog visibility
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null); // Player currently being edited
+  
+  // New player form data with default values
   const [newPlayer, setNewPlayer] = useState({
-    name: '',
-    role: '',
-    basePrice: 0,
-    age: 0,
-    matches: 0,
-    description: ''
+    name: '', // Player's full name
+    role: '', // Playing position (batsman, bowler, all-rounder, wicket-keeper)
+    basePrice: 0, // Starting auction price in rupees
+    age: 0, // Player's age
+    matches: 0, // Number of matches played
+    description: '' // Additional information about the player
   });
 
-  // Filter and search players
+  /**
+   * Memoized player filtering and search logic
+   * 
+   * This function filters the player list based on multiple criteria:
+   * - Search term: matches player name or role (case-insensitive)
+   * - Role filter: shows all players or filters by specific playing position
+   * - Status filter: shows all, sold (has teamId), or unsold (no teamId) players
+   * 
+   * Uses useMemo for performance optimization to prevent unnecessary recalculations.
+   */
   const filteredPlayers = useMemo(() => {
     return players.filter(player => {
+      // Check if player name or role contains the search term
       const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            player.role.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Check if player role matches the selected filter
       const matchesRole = roleFilter === 'all' || player.role === roleFilter;
+      
+      // Check player auction status (sold players have teamId, unsold don't)
       const matchesStatus = statusFilter === 'all' || 
                            (statusFilter === 'sold' && player.teamId) ||
                            (statusFilter === 'unsold' && !player.teamId);
       
+      // Return players that match all criteria
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [players, searchTerm, roleFilter, statusFilter]);
+  }, [players, searchTerm, roleFilter, statusFilter]); // Recalculate when these dependencies change
 
-  // Get unique roles for filter
+  /**
+   * Extract unique player roles for the filter dropdown
+   * 
+   * Creates a sorted list of all unique playing positions from the players data.
+   * This is used to populate the role filter dropdown dynamically.
+   */
   const roles = useMemo(() => {
     const uniqueRoles = [...new Set(players.map(p => p.role))];
-    return uniqueRoles.sort();
-  }, [players]);
+    return uniqueRoles.sort(); // Sort alphabetically for better UX
+  }, [players]); // Recalculate when players data changes
 
   const handleAddPlayer = async () => {
     if (!newPlayer.name || !newPlayer.role) {
