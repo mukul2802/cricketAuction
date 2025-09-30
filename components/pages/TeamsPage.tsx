@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { formatCurrency } from '../../src/utils';
 
 interface TeamsPageProps {
   onNavigate: (page: PageType) => void;
@@ -267,7 +268,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
               <Button onClick={(e) => {
                 e.preventDefault();
                 openAddTeam();
-              }}>
+              }} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Team
               </Button>
@@ -331,7 +332,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Budget Remaining</span>
                     <span className="font-bold text-primary">
-                      ₹{((team.remainingBudget || 0) / 10000000).toFixed(1)}Cr
+                      {formatCurrency(team.remainingBudget || 0)}
                     </span>
                   </div>
                   <Progress 
@@ -340,7 +341,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{(((team.remainingBudget || 0) / (team.budget || 1)) * 100).toFixed(0)}% remaining</span>
-                    <span>Total: ₹{((team.budget || 0) / 10000000).toFixed(1)}Cr</span>
+                    <span>Total: {formatCurrency(team.budget || 0)}</span>
                   </div>
                 </div>
 
@@ -351,7 +352,7 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                   </div>
                   <div>
                     <p className="text-lg font-bold">
-                      {(((team.budget || 0) - (team.remainingBudget || 0)) / 10000000).toFixed(1)}Cr
+                      {formatCurrency((team.budget || 0) - (team.remainingBudget || 0))}
                     </p>
                     <p className="text-xs text-muted-foreground">Spent</p>
                   </div>
@@ -489,10 +490,10 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                           </div>
                           <div className="text-right">
                             <div className="font-bold text-primary">
-                              ₹{((player.finalPrice || 0) / 10000000).toFixed(1)}Cr
+                              {formatCurrency(player.finalPrice || 0)}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              Base: ₹{((player.basePrice || 0) / 10000000).toFixed(1)}Cr
+                              Base: {formatCurrency(player.basePrice || 0)}
                             </div>
                           </div>
                         </div>

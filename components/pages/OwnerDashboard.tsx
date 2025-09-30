@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { playerService, Player, targetPlayerService, TargetPlayer, auctionService, AuctionRound } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
+import { formatCurrency } from '../../src/utils';
 import {
   Trophy,
   Users,
@@ -182,7 +183,7 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{((myTeam?.remainingBudget || 0) / 10000000).toFixed(1)}Cr
+                {formatCurrency(myTeam?.remainingBudget || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 {((((myTeam?.remainingBudget || 0) / (myTeam?.budget || 1)) * 100)).toFixed(0)}% remaining
@@ -199,7 +200,7 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{(teamStats.totalSpent / 10000000).toFixed(1)}Cr
+                {formatCurrency(teamStats.totalSpent)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Invested in squad
@@ -251,7 +252,7 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-primary">
-                          ₹{((player.finalPrice || player.basePrice) / 10000000).toFixed(1)}Cr
+                          {formatCurrency(player.finalPrice || player.basePrice)}
                         </p>
                       </div>
                     </div>
@@ -292,7 +293,7 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                           <Badge variant="outline" className={getRoleColor(target.player.role)}>
                             {target.player.role}
                           </Badge>
-                          <span>₹{(target.player.basePrice / 100000).toFixed(1)}L</span>
+                          <span>{formatCurrency(target.player.basePrice)}</span>
                         </div>
                       </div>
                     </div>
@@ -330,15 +331,15 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Total Purse</span>
-                <span className="font-bold">₹{((myTeam?.budget || 120000000) / 10000000).toFixed(1)}Cr</span>
+                <span className="font-bold">{formatCurrency(myTeam?.budget || 120000000)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Amount Spent</span>
-                <span className="font-bold text-destructive">₹{(teamStats.totalSpent / 10000000).toFixed(1)}Cr</span>
+                <span className="font-bold text-destructive">{formatCurrency(teamStats.totalSpent)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Remaining Budget</span>
-                <span className="font-bold text-primary">₹{((myTeam?.remainingBudget || 0) / 10000000).toFixed(1)}Cr</span>
+                <span className="font-bold text-primary">{formatCurrency(myTeam?.remainingBudget || 0)}</span>
               </div>
               <Progress 
                 value={((teamStats.totalSpent / (myTeam?.budget || 120000000)) * 100)} 

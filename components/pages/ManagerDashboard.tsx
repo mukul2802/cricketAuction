@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PageType } from '@/components/Router';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card';
+import { Button } from '../../src/components/ui/button';
+import { PageType } from '../../src/components/Router';
 import { auctionService, playerService, teamService } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import {
@@ -15,6 +15,7 @@ import {
   Activity,
   Star
 } from 'lucide-react';
+import { formatCurrency } from '../../src/utils';
 
 interface ManagerDashboardProps {
   onNavigate: (page: PageType) => void;
@@ -72,7 +73,7 @@ export function ManagerDashboard({ onNavigate }: ManagerDashboardProps) {
         if (soldPlayers.length > 0) {
           const recentSold = soldPlayers.slice(-1)[0];
           activities.push({
-            text: `${recentSold.name} sold for ₹${((recentSold.finalPrice || 0) / 10000000).toFixed(1)}Cr`,
+            text: `${recentSold.name} sold for ${formatCurrency(recentSold.finalPrice || 0)}`,
             time: '15 min ago',
             color: 'bg-blue-400',
             animate: false
@@ -187,7 +188,7 @@ export function ManagerDashboard({ onNavigate }: ManagerDashboardProps) {
               {loading ? (
                 <div className="text-2xl font-bold animate-pulse">-</div>
               ) : (
-                <div className="text-2xl font-bold">₹{stats.averageBidTime}Cr</div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.averageBidTime * 1000000)}</div>
               )}
               <p className="text-xs text-muted-foreground">Per player</p>
             </CardContent>

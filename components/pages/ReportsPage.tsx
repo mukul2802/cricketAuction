@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../layout/MainLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PageType } from '@/components/Router';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card';
+import { Button } from '../../src/components/ui/button';
+import { Badge } from '../../src/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../src/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../src/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../src/components/ui/table';
+import { PageType } from '../../src/components/Router';
 import {
   BarChart3,
   Download,
@@ -15,6 +17,7 @@ import {
   Calendar,
   FileText
 } from 'lucide-react';
+import { formatCurrency } from '../../src/utils';
 
 interface ReportsPageProps {
   onNavigate: (page: PageType) => void;
@@ -112,7 +115,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{(summaryStats.totalValue / 10000000).toFixed(0)}Cr
+                {formatCurrency(summaryStats.totalValue)}
               </div>
               <p className="text-xs text-muted-foreground">Money spent</p>
             </CardContent>
@@ -125,7 +128,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{(summaryStats.averagePrice / 100000).toFixed(1)}L
+                {formatCurrency(summaryStats.averagePrice)}
               </div>
               <p className="text-xs text-muted-foreground">Per player</p>
             </CardContent>
@@ -138,7 +141,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{(summaryStats.highestBid / 10000000).toFixed(1)}Cr
+                {formatCurrency(summaryStats.highestBid)}
               </div>
               <p className="text-xs text-muted-foreground">Single purchase</p>
             </CardContent>
@@ -176,7 +179,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
                       <TableCell>
                         <div className="flex items-center gap-1 text-primary">
                           <IndianRupee className="w-3 h-3" />
-                          {(transaction.amount / 10000000).toFixed(1)}Cr
+                          {formatCurrency(transaction.amount)}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">

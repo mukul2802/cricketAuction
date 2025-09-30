@@ -10,6 +10,7 @@ import { useTeams, usePlayers } from '@/hooks';
 import { teamsApi } from '@/api/teams';
 import { Team, Player } from '@/types';
 import { PageType } from '@/components/Router';
+import { formatCurrency } from '@/utils';
 import {
   Search,
   Plus,
@@ -213,7 +214,7 @@ export function TeamManagement({ onNavigate }: TeamManagementProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{teams.reduce((sum, team) => sum + team.budget, 0).toLocaleString()}
+                {formatCurrency(teams.reduce((sum, team) => sum + team.budget, 0))}
               </div>
               <p className="text-xs text-muted-foreground">Combined budget</p>
             </CardContent>
@@ -334,7 +335,7 @@ export function TeamManagement({ onNavigate }: TeamManagementProps) {
                             <IndianRupee className="w-4 h-4 text-muted-foreground" />
                             <span className="text-muted-foreground">Budget</span>
                           </div>
-                          <div className="font-medium">₹{team.budget.toLocaleString()}</div>
+                          <div className="font-medium">{formatCurrency(team.budget)}</div>
                         </div>
                         
                         <div className="space-y-1">
@@ -342,7 +343,7 @@ export function TeamManagement({ onNavigate }: TeamManagementProps) {
                             <IndianRupee className="w-4 h-4 text-muted-foreground" />
                             <span className="text-muted-foreground">Remaining</span>
                           </div>
-                          <div className="font-medium text-green-600">₹{team.remainingBudget.toLocaleString()}</div>
+                          <div className="font-medium text-green-600">{formatCurrency(team.remainingBudget)}</div>
                         </div>
                         
                         <div className="space-y-1">
@@ -358,7 +359,7 @@ export function TeamManagement({ onNavigate }: TeamManagementProps) {
                             <Trophy className="w-4 h-4 text-muted-foreground" />
                             <span className="text-muted-foreground">Spent</span>
                           </div>
-                          <div className="font-medium">₹{stats.totalSpent.toLocaleString()}</div>
+                          <div className="font-medium">{formatCurrency(stats.totalSpent)}</div>
                         </div>
                       </div>
                       
@@ -379,7 +380,7 @@ export function TeamManagement({ onNavigate }: TeamManagementProps) {
                       {stats.playerCount > 0 && (
                         <div className="pt-2 border-t">
                           <div className="text-sm text-muted-foreground">
-                            Avg per player: ₹{Math.round(stats.avgPlayerCost).toLocaleString()}
+                            Avg per player: {formatCurrency(Math.round(stats.avgPlayerCost))}
                           </div>
                         </div>
                       )}

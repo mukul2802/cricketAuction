@@ -52,7 +52,7 @@ export function PlayerForm({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="name">Player Name</Label>
           <Input
             id="name"
@@ -61,7 +61,7 @@ export function PlayerForm({
             placeholder="Enter player name"
           />
         </div>
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="role">Role</Label>
           <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
             <SelectTrigger>
@@ -78,7 +78,7 @@ export function PlayerForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="basePrice">Base Price (₹) - Min: 20 Lakhs</Label>
           <Input
             id="basePrice"
@@ -92,7 +92,7 @@ export function PlayerForm({
             <p className="text-sm text-red-500 mt-1">Base price must be a valid number and at least 20 Lakhs (2000000)</p>
           )}
         </div>
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="imageUrl">Image URL</Label>
           <Input
             id="imageUrl"
@@ -104,7 +104,7 @@ export function PlayerForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="battingHand">Batting Hand</Label>
           <Select value={formData.battingHand || ''} onValueChange={(value) => setFormData({...formData, battingHand: value})}>
             <SelectTrigger>
@@ -116,7 +116,7 @@ export function PlayerForm({
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="bowlingHand">Bowling Hand</Label>
           <Select value={formData.bowlingHand || ''} onValueChange={(value) => setFormData({...formData, bowlingHand: value})}>
             <SelectTrigger>
@@ -132,7 +132,7 @@ export function PlayerForm({
 
       {showTeamFields && (
         <div className="grid grid-cols-3 gap-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="team">Team {formData.status === 'sold' && <span className="text-red-500">*</span>}</Label>
             <Select value={formData.team || 'none'} onValueChange={(value) => setFormData({...formData, team: value === 'none' ? '' : value})}>
               <SelectTrigger className={!isTeamValid ? 'border-red-500' : ''}>
@@ -151,7 +151,7 @@ export function PlayerForm({
               <p className="text-sm text-red-500 mt-1">Team is required when status is 'sold'</p>
             )}
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="soldPrice">Sold Price (₹) - Min: 20 Lakhs {formData.status === 'sold' && <span className="text-red-500">*</span>}</Label>
             <Input
               id="soldPrice"
@@ -167,7 +167,7 @@ export function PlayerForm({
               </p>
             )}
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select value={formData.status || ''} onValueChange={(value) => setFormData({...formData, status: value})}>
               <SelectTrigger>
@@ -188,7 +188,7 @@ export function PlayerForm({
           <div className="border-t pt-4">
             <h3 className="font-medium mb-3">Player Statistics</h3>
             <div className="grid grid-cols-3 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="matches">Matches</Label>
                 <Input
                   id="matches"
@@ -198,7 +198,7 @@ export function PlayerForm({
                   placeholder="0"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="runs">Runs</Label>
                 <Input
                   id="runs"
@@ -208,7 +208,7 @@ export function PlayerForm({
                   placeholder="0"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="wickets">Wickets</Label>
                 <Input
                   id="wickets"
@@ -221,7 +221,7 @@ export function PlayerForm({
             </div>
             
             <div className="grid grid-cols-3 gap-4 mt-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="average">Batting Average</Label>
                 <Input
                   id="average"
@@ -232,7 +232,7 @@ export function PlayerForm({
                   placeholder="0.00"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="strikeRate">Strike Rate</Label>
                 <Input
                   id="strikeRate"
@@ -243,7 +243,7 @@ export function PlayerForm({
                   placeholder="0.00"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="economyRate">Economy Rate</Label>
                 <Input
                   id="economyRate"
@@ -257,7 +257,7 @@ export function PlayerForm({
             </div>
 
             <div className="grid grid-cols-1 gap-4 mt-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="overs">Overs Bowled</Label>
                 <Input
                   id="overs"

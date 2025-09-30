@@ -20,6 +20,7 @@ import { StatsCard, SearchBar, DataTable, LoadingState, EmptyState, AddButton, E
 import { usePlayers } from '@/hooks';
 import { Player } from '@/types';
 import { PageType } from '@/components/Router';
+import { formatCurrency } from '../../utils';
 
 // Icons for the player management interface
 import {
@@ -314,7 +315,7 @@ export function PlayerManagement({ onNavigate }: PlayerManagementProps) {
           />
           <StatsCard
             title="Avg Base Price"
-            value={`₹${players.length > 0 ? Math.round(players.reduce((sum, p) => sum + p.basePrice, 0) / players.length).toLocaleString() : '0'}`}
+            value={players.length > 0 ? formatCurrency(Math.round(players.reduce((sum, p) => sum + p.basePrice, 0) / players.length)) : '₹0'}
             description="Per player"
             icon={IndianRupee}
           />
@@ -401,13 +402,13 @@ export function PlayerManagement({ onNavigate }: PlayerManagementProps) {
                 key: 'basePrice',
                 header: 'Base Price',
                 sortable: true,
-                render: (player: Player) => `₹${player.basePrice.toLocaleString()}`
+                render: (player: Player) => formatCurrency(player.basePrice)
               },
               {
                 key: 'finalPrice',
                 header: 'Final Price',
                 sortable: true,
-                render: (player: Player) => player.finalPrice ? `₹${player.finalPrice.toLocaleString()}` : '-'
+                render: (player: Player) => player.finalPrice ? formatCurrency(player.finalPrice) : '-'
               },
               {
                 key: 'age',

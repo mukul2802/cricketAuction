@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '../../src/components/ui/card';
+import { Badge } from '../../src/components/ui/badge';
+import { Progress } from '../../src/components/ui/progress';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { TeamBudgetCompact } from '@/components/ui/team-budget-compact';
+import { TeamBudgetCompact } from '../../src/components/ui/team-budget-compact';
 import { IndianRupee, Timer, Users, Trophy } from 'lucide-react';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
+import { formatCurrency } from '../../src/utils';
 
 export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
@@ -90,11 +91,7 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
     };
   }, [handleAuctionUpdate, handleTeamsUpdate]);
 
-  const formatCurrency = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-    return `₹${amount.toLocaleString()}`;
-  };
+
 
   // Timer countdown effect
   useEffect(() => {
@@ -133,7 +130,7 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
                 {team.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
               </div>
               <div className="text-xs text-white">
-                ₹{(team.remainingBudget / 10000000).toFixed(0)}Cr
+                {formatCurrency(team.remainingBudget)}
               </div>
             </div>
           ))}
@@ -196,7 +193,7 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
                       <span className="text-primary text-lg">BASE PRICE:</span>
                     </div>
                     <div className="text-white text-4xl font-bold">
-                      ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
+                      {formatCurrency(currentPlayer.basePrice)}
                     </div>
                   </div>
                 </div>

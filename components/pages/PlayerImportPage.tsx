@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Eye
 } from 'lucide-react';
+import { formatCurrency } from '../../src/utils';
 
 interface PlayerImportPageProps {
   onNavigate: (page: PageType) => void;
@@ -444,7 +445,7 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
                           </TableCell>
                           <TableCell>
                             {player.basePrice ? (
-                              `₹${(Number(player.basePrice) / 100000).toFixed(0)}L`
+                              formatCurrency(Number(player.basePrice))
                             ) : (
                               <div>
                                 <span className="text-red-400">Missing</span>

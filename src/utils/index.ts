@@ -13,11 +13,17 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatCurrency(amount: number): string {
   if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(1)}Cr`;
+    const crores = amount / 10000000;
+    const croreStr = crores % 1 === 0 ? crores.toString() : crores.toFixed(1);
+    return `₹${croreStr}Cr`;
   } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
+    const lakhs = amount / 100000;
+    const lakhStr = lakhs % 1 === 0 ? lakhs.toString() : lakhs.toFixed(1);
+    return `₹${lakhStr}L`;
   } else if (amount >= 1000) {
-    return `₹${(amount / 1000).toFixed(1)}K`;
+    const thousands = amount / 1000;
+    const thousandStr = thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(1);
+    return `₹${thousandStr}K`;
   }
   return `₹${amount}`;
 }
@@ -250,4 +256,91 @@ export function removeDuplicates<T>(array: T[], key?: keyof T): T[] {
     seen.add(value);
     return true;
   });
+}
+
+/**
+ * Convert Google Drive sharing URL to direct image URL
+ * Converts URLs like:
+ * https://drive.google.com/file/d/FILE_ID/view
+ * https://drive.google.com/uc?export=view&id=FILE_ID
+ * To: https://drive.google.com/thumbnail?id=FILE_ID&sz=w400
+ */
+export function convertGoogleDriveUrl(url: string): string {
+  if (!url || !url.includes('drive.google.com')) {
+    return url;
+  }
+
+  // Use the extractGoogleDriveFileId function for consistent parsing
+  const fileId = extractGoogleDriveFileId(url);
+  
+  if (fileId) {
+    // Always prioritize thumbnail URL for better compatibility and reliability
+    // uc?export=view URLs often have CORS issues or loading problems
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+  }
+  
+  return url;
+}
+
+// Fallback function for when thumbnail fails
+export function getGoogleDriveFallbackUrl(fileId: string): string {
+  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+}
+
+// Get additional fallback URLs for Google Drive images
+export function getGoogleDriveAlternateFallbacks(fileId: string): string[] {
+  return [
+    // Try different thumbnail sizes first (most reliable)
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w300`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`,
+    // Try googleusercontent URLs (often work better)
+    `https://lh3.googleusercontent.com/d/${fileId}=w800`,
+    `https://lh3.googleusercontent.com/d/${fileId}=w600`,
+    `https://lh3.googleusercontent.com/d/${fileId}=w400`,
+    `https://lh3.googleusercontent.com/d/${fileId}=w300`,
+    // Try uc URLs without export=view (less problematic)
+    `https://drive.google.com/uc?id=${fileId}`,
+    // Last resort: the problematic formats
+    `https://drive.google.com/uc?export=view&id=${fileId}`,
+    `https://docs.google.com/uc?export=download&id=${fileId}`
+  ];
+}
+
+// Extract file ID from Google Drive URL
+export function extractGoogleDriveFileId(url: string): string | null {
+  if (!url || !url.includes('drive.google.com')) {
+    return null;
+  }
+
+  // Clean up the URL first - remove extra slashes in id parameter
+  let cleanUrl = url.replace(/id=\/+/g, 'id=');
+
+  // Try different Google Drive URL patterns
+  const patterns = [
+    // Format: https://drive.google.com/file/d/FILE_ID/view (with or without query params)
+    /\/file\/d\/([a-zA-Z0-9_-]+)(?:\/|\?)/,
+    // Format: https://drive.google.com/open?id=FILE_ID
+    /\/open\?.*id=([a-zA-Z0-9_-]+)/,
+    // Format: https://drive.google.com/uc?id=FILE_ID or https://drive.google.com/uc?export=view&id=FILE_ID
+    /\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+    // Format: https://drive.google.com/thumbnail?id=FILE_ID
+    /\/thumbnail\?.*id=([a-zA-Z0-9_-]+)/,
+    // Format: https://docs.google.com/uc?export=download&id=FILE_ID
+    /docs\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+    // Format: https://lh3.googleusercontent.com/d/FILE_ID
+    /lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/,
+    // Generic id parameter pattern (fallback)
+    /[?&]id=([a-zA-Z0-9_-]+)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = cleanUrl.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
 }

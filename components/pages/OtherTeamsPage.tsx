@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { teamService, playerService, Team, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { formatCurrency } from '../../src/utils';
 import {
   IndianRupee,
   Users,
@@ -176,7 +177,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                   </CardTitle>
                   <div className="text-right">
                     <div className="font-bold text-primary">
-                      ₹{(team.remainingBudget / 10000000).toFixed(1)}Cr
+                      {formatCurrency(team.remainingBudget)}
                     </div>
                     <div className="text-xs text-muted-foreground">remaining</div>
                   </div>
@@ -190,7 +191,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold">
-                      ₹{(((team.budget || 120000000) - team.remainingBudget) / 10000000).toFixed(1)}Cr
+                      {formatCurrency((team.budget || 120000000) - team.remainingBudget)}
                     </div>
                     <div className="text-xs text-muted-foreground">Spent</div>
                   </div>
@@ -238,7 +239,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-primary">
-                          ₹{((player.finalPrice || 0) / 10000000).toFixed(1)}Cr
+                          {formatCurrency(player.finalPrice || 0)}
                         </p>
                       </div>
                     </div>

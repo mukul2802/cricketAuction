@@ -1,9 +1,10 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/card';
+import { Badge } from '../../src/components/ui/badge';
+import { Progress } from '../../src/components/ui/progress';
 import { BarChart3, TrendingUp, Users, Clock } from 'lucide-react';
 import { Team, Player } from '../../lib/firebaseServices';
+import { formatCurrency } from '../../src/utils';
 
 interface AuctionStatsProps {
   teams: Team[];
@@ -24,9 +25,7 @@ export const AuctionStats: React.FC<AuctionStatsProps> = ({
   totalBudget,
   totalSpent
 }) => {
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString()}`;
-  };
+
 
   const formatDuration = (startTime: Date) => {
     const now = new Date();

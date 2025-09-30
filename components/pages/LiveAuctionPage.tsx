@@ -19,6 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 // Custom components and services
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { auctionService, playerService, teamService, Player, Team, AuctionRound as AuctionRoundType } from '../../lib/firebaseServices';
+import { formatCurrency } from '../../src/utils';
 import Shimmer, { ShimmerText, ShimmerAvatar, ShimmerButton } from '@/components/ui/shimmer';
 import { toast } from 'sonner';
 
@@ -666,7 +667,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     teams.map(team => ({
       id: team.id,
       name: team.name,
-      displayText: `${team.name} (₹${(team.remainingBudget / 10000000).toFixed(2)}cr)`
+      displayText: `${team.name} (${formatCurrency(team.remainingBudget)})`
     })), [teams]
   );
 
@@ -987,7 +988,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         return;
       }
       if (parsedPrice < currentPlayer.basePrice) {
-        toast.error(`Price must be at least the base price of ₹${(currentPlayer.basePrice / 100000).toFixed(1)} Lakhs`);
+        toast.error(`Price must be at least the base price of ${formatCurrency(currentPlayer.basePrice)}`);
         return;
       }
       finalPrice = parsedPrice;
@@ -1016,7 +1017,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
           });
         }
         
-        toast.success(`${currentPlayer.name} sold to ${selectedTeam} for ₹${(finalPrice / 10000000).toFixed(2)} cr`);
+        toast.success(`${currentPlayer.name} sold to ${selectedTeam} for ${formatCurrency(finalPrice)}`);
         
         // Reset form
         setSoldPrice('');
@@ -1087,7 +1088,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
     } else if (!selectedTeamObj) {
       toast.error('Please select a team');
     } else if (finalPrice < currentPlayer.basePrice) {
-      toast.error(`Price cannot be less than base price of ₹${(currentPlayer.basePrice / 10000000).toFixed(2)} cr`);
+      toast.error(`Price cannot be less than base price of ${formatCurrency(currentPlayer.basePrice)}`);
     }
   };
 
@@ -1606,30 +1607,34 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                     <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
                       {(user?.role === 'admin' || user?.role === 'owner') && (
                           <>
-                            <Label className="text-primary mb-2 block text-lg font-medium">WINNING TEAM</Label>
-                            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700/50 h-12">
-                                <SelectValue placeholder="Select team" className="text-white" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-800 border-gray-600">
-                                {teamOptions.map((team) => (
-                                  <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                                    {team.displayText}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <div className="space-y-2">
+                              <Label className="text-primary block text-lg font-medium">WINNING TEAM</Label>
+                              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                                <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700/50 h-12">
+                                  <SelectValue placeholder="Select team" className="text-white" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-gray-800 border-gray-600">
+                                  {teamOptions.map((team) => (
+                                    <SelectItem key={team.id} value={team.name} className="text-white hover:bg-gray-700 focus:bg-gray-700">
+                                      {team.displayText}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           
-                            <Label className="text-primary mb-2 block mt-4 text-lg font-medium">
-                              FINAL PRICE (Min: ₹{(currentPlayer.basePrice / 100000).toFixed(1)} Lakhs)
-                            </Label>
-                            <Input
-                              type="text"
-                              value={soldPrice}
-                              onChange={(e) => setSoldPrice(e.target.value)}
-                              placeholder={`Enter price (minimum ${currentPlayer.basePrice})`}
-                              className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 h-12 text-lg"
-                            />
+                            <div className="space-y-2 mt-4">
+                              <Label className="text-primary block text-lg font-medium">
+                                FINAL PRICE (Min: {formatCurrency(currentPlayer.basePrice)})
+                              </Label>
+                              <Input
+                                type="text"
+                                value={soldPrice}
+                                onChange={(e) => setSoldPrice(e.target.value)}
+                                placeholder={`Enter price (minimum ${currentPlayer.basePrice})`}
+                                className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 h-12 text-lg"
+                              />
+                            </div>
                           </>
                         )}
                     </div>
@@ -1779,7 +1784,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
                   <div className="text-center">
                     <h3 className="text-gray-400 text-sm font-medium mb-2">BASE PRICE</h3>
                     <div className="text-white text-2xl font-bold">
-                      ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
+                      {formatCurrency(currentPlayer.basePrice)}
                     </div>
                   </div>
                 )}

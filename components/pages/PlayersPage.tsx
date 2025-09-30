@@ -17,6 +17,7 @@ import { playerService, Player, targetPlayerService, teamService } from '../../l
 import { deleteField } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { formatCurrency } from '../../src/utils';
 import {
   Search,
   Filter,
@@ -540,13 +541,20 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                     <TableRow key={player.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                          {player.image ? (
                             <ImageWithFallback
-                                src={player.image}
-                                alt={player.name}
-                                className="w-full h-full rounded-full object-cover object-top"
-                              />
-                          </div>
+                              src={player.image}
+                              alt={player.name}
+                              className="w-full h-full rounded-full object-cover object-top"
+                              enhancedClassName="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                              <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium">{player.name}</p>
                             {(player as any).nationality && (
@@ -588,8 +596,7 @@ export function PlayersPage({ onNavigate }: PlayersPageProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <IndianRupee className="w-3 h-3" />
-                          {(player.basePrice / 100000).toFixed(1)}L
+                          {formatCurrency(player.basePrice)}
                         </div>
                       </TableCell>
                       <TableCell>

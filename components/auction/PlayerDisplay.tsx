@@ -1,9 +1,11 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '../../src/components/ui/card';
+import { Badge } from '../../src/components/ui/badge';
+import { Button } from '../../src/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Player } from '../../lib/firebaseServices';
+import { formatCurrency } from '../../src/utils';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface PlayerDisplayProps {
   player: Player | null;
@@ -92,23 +94,12 @@ export const PlayerDisplay: React.FC<PlayerDisplayProps> = ({
             {/* Player Image */}
             <div className="flex justify-center">
               <div className="relative">
-                <img
+                <ImageWithFallback
                   src={player.image || ''}
                   alt={player.name}
                   className="w-64 h-64 object-cover rounded-lg shadow-lg"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }}
+                  enhancedClassName="w-64 h-64 rounded-lg shadow-lg"
                 />
-                <div className="hidden w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <div className="text-gray-500 text-center">
-                    <div className="text-4xl mb-2">👤</div>
-                    <div>No Image</div>
-                  </div>
-                </div>
-
               </div>
             </div>
 
@@ -127,7 +118,7 @@ export const PlayerDisplay: React.FC<PlayerDisplayProps> = ({
                 <div>
                   <span className="font-medium text-gray-600">Base Price:</span>
                   <div className="text-lg font-semibold text-green-600">
-                    ₹{player.basePrice?.toLocaleString() || 'N/A'}
+                    {player.basePrice ? formatCurrency(player.basePrice) : 'N/A'}
                   </div>
                 </div>
                 <div>
@@ -144,7 +135,7 @@ export const PlayerDisplay: React.FC<PlayerDisplayProps> = ({
                 <div>
                   <span className="font-medium text-gray-600">Final Price:</span>
                   <div className="text-lg font-semibold text-green-600">
-                    ₹{player.finalPrice.toLocaleString()}
+                    {formatCurrency(player.finalPrice)}
                   </div>
                 </div>
               )}

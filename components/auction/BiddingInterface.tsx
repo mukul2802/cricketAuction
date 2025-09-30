@@ -1,10 +1,11 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/card';
+import { Button } from '../../src/components/ui/button';
+import { Input } from '../../src/components/ui/input';
+import { Badge } from '../../src/components/ui/badge';
 import { Timer, Users, DollarSign } from 'lucide-react';
 import { Team, Player } from '../../lib/firebaseServices';
+import { formatCurrency } from '../../src/utils';
 
 interface BiddingInterfaceProps {
   currentPlayer: Player | null;
@@ -49,9 +50,7 @@ export const BiddingInterface: React.FC<BiddingInterfaceProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString()}`;
-  };
+
 
   const getTimeColor = () => {
     if (timeLeft <= 10) return 'text-red-600';

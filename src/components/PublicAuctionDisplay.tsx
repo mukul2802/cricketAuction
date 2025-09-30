@@ -6,6 +6,7 @@ import { Play, Trophy, Target, Home, Users, FileSpreadsheet, Maximize, Minimize 
 import { auctionService, playerService, teamService, Player, Team, AuctionRound } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import { PageType } from './Router';
+import { formatCurrency } from '../utils';
 
 interface PublicAuctionDisplayProps {
   onNavigate?: (page: PageType) => void;
@@ -108,11 +109,7 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
     };
   }, [handleAuctionUpdate, handleTeamsUpdate]);
 
-  const formatCurrency = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-    return `₹${amount.toLocaleString()}`;
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden auction-dark flex">
@@ -221,7 +218,7 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
                         {team.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
                       </div>
                       <div className="text-xs text-white">
-                        ₹{(team.remainingBudget / 10000000).toFixed(2)}Cr
+                        {formatCurrency(team.remainingBudget)}
                       </div>
                     </div>
                   ))}
@@ -316,7 +313,7 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
                       <div className="text-center space-y-4">
                         <div className="text-primary text-xl font-semibold">BASE PRICE</div>
                         <div className="text-white text-4xl font-bold">
-                          ₹{(currentPlayer.basePrice / 10000000).toFixed(2)} cr
+                          {formatCurrency(currentPlayer.basePrice)}
                         </div>
                       </div>
                     </div>

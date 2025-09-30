@@ -21,6 +21,7 @@ import {
   Play,
   Activity
 } from 'lucide-react';
+import { formatCurrency } from '../../src/utils';
 
 interface AdminDashboardProps {
   onNavigate: (page: PageType) => void;
@@ -511,13 +512,13 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Budget Used:</span>
                         <span className="font-medium">
-                          ₹{((team.budget - team.remainingBudget) / 10000000).toFixed(1)}Cr
+                          {formatCurrency(team.budget - team.remainingBudget)}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Remaining:</span>
                         <span className="font-medium text-primary">
-                          ₹{(team.remainingBudget / 10000000).toFixed(1)}Cr
+                          {formatCurrency(team.remainingBudget)}
                         </span>
                       </div>
                       <Progress 
@@ -600,7 +601,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                           transaction.type === 'sold' ? 'text-green-500' : 'text-red-500'
                         }`}>
                           {transaction.type === 'sold' 
-                            ? `₹${(transaction.amount / 10000000).toFixed(1)}Cr` 
+                            ? formatCurrency(transaction.amount) 
                             : 'Unsold'
                           }
                         </p>
