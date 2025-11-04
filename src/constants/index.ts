@@ -1,5 +1,5 @@
 // Application Constants
-export const APP_NAME = 'Cricket Auction System';
+export const APP_NAME = 'Thoughtwin Premier League Auction - 2025 System';
 export const APP_VERSION = '1.0.0';
 
 // User Roles

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Eye, EyeOff, Trophy, Shield } from 'lucide-react';
 import { authApi } from '../../api';
 import { DEMO_ACCOUNTS, ERROR_MESSAGES } from '../../constants';
+import { ImageWithFallback } from '../../../components/figma/ImageWithFallback';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -54,10 +55,10 @@ export function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo and Title */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-20 h-20 bg-primary rounded-full flex items-center justify-center mb-4">
-            <Trophy className="w-10 h-10 text-primary-foreground" />
+          <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4">
+            <ImageWithFallback src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png" alt="Thoughtwin Premier League (TPL) Logo" className="w-16 h-16 object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Cricket Auction</h1>
+          <h1 className="text-3xl font-bold text-foreground">Thoughtwin Premier League Auction - 2025</h1>
           <p className="text-muted-foreground">Player Bidding System</p>
         </div>
 
@@ -122,7 +123,7 @@ export function LoginPage() {
                   window.open('?display=auction', '_blank');
                 }}
               >
-                <Trophy className="w-4 h-4 mr-2" />
+                <ImageWithFallback src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png" alt="TPL" className="w-6 h-6 mr-2 object-contain" />
                 Open Auction Display
               </Button>
             </div>

@@ -108,15 +108,14 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
 
       {/* Cricket Auction Logo - Top Center */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
-          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-            <ImageWithFallback
-                src="https://images.unsplash.com/photo-1580831800257-f83135932664?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmlja2V0JTIwbG9nbyUyMHRyb3BoeXxlbnwxfHx8fDE3NTY4OTk1MzF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-                alt="Cricket Auction Logo"
-                className="w-full h-full rounded-full object-cover object-center"
-              />
-          </div>
-          <span className="text-primary font-bold text-lg">CRICKET AUCTION</span>
+        <div className="flex flex-col items-center gap-2 bg-black/30 backdrop-blur-sm rounded-lg px-4 py-3 border border-gray-700/50">
+          <ImageWithFallback
+              src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png"
+              alt="Thoughtwin Premier League Auction - 2025 Logo"
+              className="w-16 h-16 object-contain"
+            />
+          <span className="text-primary font-bold text-lg">THOUGHTWIN PREMIER LEAGUE</span>
+          <span className="text-primary font-bold text-lg">AUCTION - 2025</span>
         </div>
       </div>
 

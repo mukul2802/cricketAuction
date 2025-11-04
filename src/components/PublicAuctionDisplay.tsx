@@ -204,8 +204,9 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
               {/* Cricket Auction Header - Top Center */}
               <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
                 <div className="bg-black/30 backdrop-blur-sm rounded-lg px-8 py-4 border border-gray-700/50 flex flex-col items-center gap-2">
-                  <Target className="w-12 h-12 text-primary" />
-                  <span className="text-xl font-bold text-white">CRICKET AUCTION</span>
+                  <ImageWithFallback src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png" alt="Thoughtwin Premier League (TPL) Logo" className="w-16 h-16 object-contain" />
+                  <span className="text-primary font-bold text-lg">THOUGHTWIN PREMIER LEAGUE</span>
+                  <span className="text-primary font-bold text-lg">AUCTION - 2025</span>
                 </div>
               </div>
 
@@ -234,7 +235,7 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
               </div>
 
               {/* Main Player Display */}
-              <div className="pt-12 pb-4 h-screen w-full overflow-hidden flex flex-col">
+              <div className="pt-20 pb-28 h-screen w-full overflow-hidden flex flex-col">
                 <div className="w-full flex-1 flex items-center">
                   {/* Player Info and Image */}
                   <div className="w-full flex items-center justify-between px-8">
@@ -280,7 +281,7 @@ export const PublicAuctionDisplay = React.memo(function PublicAuctionDisplay({ o
                 </div>
 
                 {/* Player Stats Cards - Bottom */}
-                <div className="absolute bottom-2 left-2.5 right-2.5 z-10">
+                <div className="absolute bottom-2 left-2.5 right-2.5 z-0">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                     {/* Batting Stats */}
                     <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">

@@ -23,6 +23,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 // Props interface for the MainLayout component
 interface MainLayoutProps {
@@ -129,18 +130,16 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
-          {/* Logo and close button */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold text-foreground">Cricket Auction</span>
+          {/* Logo and close button - 3-line centered layout */}
+          <div className="relative p-4 border-b border-border">
+            <div className="flex flex-col items-center text-center gap-2">
+              <ImageWithFallback src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png" alt="Thoughtwin Premier League (TPL) Logo" className="w-16 h-16 object-contain" />
+              <span className="text-black font-bold text-sm">TPL-2025 Auction</span>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="lg:hidden absolute right-4 top-4"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="w-4 h-4" />

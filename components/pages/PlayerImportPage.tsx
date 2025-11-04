@@ -15,6 +15,7 @@ import {
   Eye
 } from 'lucide-react';
 import { formatCurrency } from '../../src/utils';
+import * as XLSX from 'xlsx';
 
 interface PlayerImportPageProps {
   onNavigate: (page: PageType) => void;
@@ -33,13 +34,21 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
       setFileName(file.name);
       setUploadStatus('uploading');
 
+      const isXlsx = /\.xlsx$/i.test(file.name) || (file.type && file.type.includes('spreadsheet'));
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const text = String(reader.result || '');
-          const parsed = parseCsv(text);
-          const validated = validateRows(parsed);
-          setRows(validated);
+          if (isXlsx) {
+            const buffer = reader.result as ArrayBuffer;
+            const parsed = parseXlsx(buffer);
+            const validated = validateRows(parsed);
+            setRows(validated);
+          } else {
+            const text = String(reader.result || '');
+            const parsed = parseCsv(text);
+            const validated = validateRows(parsed);
+            setRows(validated);
+          }
           setUploadStatus('preview');
         } catch (e: any) {
           setErrors([`Failed to read file: ${e?.message || e}`]);
@@ -50,7 +59,11 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
         setErrors([`Failed to read file`]);
         setUploadStatus('idle');
       };
-      reader.readAsText(file);
+      if (isXlsx) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -204,6 +217,14 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
     return rows;
   }
 
+  function parseXlsx(buffer: ArrayBuffer) {
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[firstSheetName];
+    const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    return json as any[];
+  }
+
   // Handles quoted CSV fields and commas inside quotes
   function splitCsvLine(line: string): string[] {
     const result: string[] = [];
@@ -289,7 +310,7 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
                 </p>
                 <Input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx"
                   onChange={handleFileUpload}
                   className="max-w-xs mx-auto"
                 />
@@ -301,15 +322,20 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
                     <div className="flex items-center gap-3">
                       <FileText className="w-8 h-8 text-primary" />
                       <div>
-                        <h4 className="font-medium">Sample CSV Template</h4>
+                        <h4 className="font-medium">Sample Templates</h4>
                         <p className="text-sm text-muted-foreground">
-                          Download template with required columns
+                          Download CSV or XLSX templates with required columns
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full mt-3" onClick={downloadSampleCsv}>
-                      Download Template
-                    </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                      <Button variant="outline" className="w-full" onClick={downloadSampleCsv}>
+                        Download CSV
+                      </Button>
+                      <Button variant="outline" className="w-full" onClick={downloadSampleXlsx}>
+                        Download XLSX
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -504,4 +530,33 @@ export function PlayerImportPage({ onNavigate }: PlayerImportPageProps) {
       </div>
     </MainLayout>
   );
+}
+
+// Add XLSX template download function
+function downloadSampleXlsx() {
+  const headers = [
+    'Name',
+    'Skill',
+    'Batting Hand',
+    'Bowling Hand',
+    'Match',
+    'Run',
+    'Avg',
+    'Strike Rate',
+    'Overs',
+    'Wickets',
+    'Economy Rate',
+    'Base Price',
+    'Image URL'
+  ];
+
+  const sampleData = [
+    ['Virat Kohli','Batsman','Right','Right',120,5000,52.3,138.4,0,0,0,2000000,'https://example.com/virat.jpg'],
+    ['Ravindra Jadeja','All-Rounder','Left','Left',98,2500,45.1,126.2,300,150,6.1,1500000,'https://example.com/jadeja.jpg']
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Players');
+  XLSX.writeFile(workbook, 'player_import_template.xlsx');
 }
