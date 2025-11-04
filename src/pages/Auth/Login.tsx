@@ -59,7 +59,7 @@ export function LoginPage() {
             <ImageWithFallback src="https://res.cloudinary.com/dsvzjigqx/image/upload/v1762244816/Asset_2_4x_wyrtd5.png" alt="Thoughtwin Premier League (TPL) Logo" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Thoughtwin Premier League Auction - 2025</h1>
-          <p className="text-muted-foreground">Player Bidding System</p>
+          <p className="text-foreground text-lg font-medium drop-shadow-sm">Player Bidding System</p>
         </div>
 
         {/* Login Form */}

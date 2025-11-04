@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { formatCurrency } from '../../src/utils';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface TeamsPageProps {
   onNavigate: (page: PageType) => void;
@@ -50,6 +51,9 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
   const [showSquadModal, setShowSquadModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [squadPlayers, setSquadPlayers] = useState<Player[]>([]);
+  // Add player detail modal state
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [playerDetail, setPlayerDetail] = useState<Player | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -476,11 +480,29 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                       return (
                         <div key={player.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                              <Users className="w-6 h-6 text-primary" />
-                            </div>
+                            {player.image ? (
+                              <ImageWithFallback
+                                src={player.image}
+                                alt={player.name}
+                                className="w-full h-full rounded-full object-cover object-top"
+                                enhancedClassName="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                                <Users className="w-6 h-6 text-primary" />
+                              </div>
+                            )}
                             <div>
-                              <h5 className="font-medium">{player.name}</h5>
+                              <h5
+                                className="font-medium hover:underline cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPlayerDetail(player);
+                                  setShowPlayerModal(true);
+                                }}
+                              >
+                                {player.name}
+                              </h5>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className={`text-xs ${getRoleColor(player.role)}`}>
                                    {player.role}
@@ -503,6 +525,86 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
                 )}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+        {/* Player Details Dialog */}
+        <Dialog open={showPlayerModal} onOpenChange={setShowPlayerModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                {playerDetail?.name || 'Player Details'}
+              </DialogTitle>
+              <DialogDescription>Complete player statistics</DialogDescription>
+            </DialogHeader>
+            {playerDetail && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-1 flex items-start">
+                  {playerDetail.image ? (
+                    <ImageWithFallback
+                      src={playerDetail.image}
+                      alt={playerDetail.name}
+                      className="w-full h-full rounded-lg object-cover object-top"
+                      enhancedClassName="w-40 h-40 rounded-lg overflow-hidden"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Users className="w-10 h-10 text-primary" />
+                    </div>
+                  )}
+                </div>
+                <div className="md:col-span-2 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Role</span>
+                    <div className="font-medium">{playerDetail.role || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Base Price</span>
+                    <div className="font-medium">{formatCurrency(playerDetail.basePrice || 0)}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Final Price</span>
+                    <div className="font-medium">{formatCurrency(playerDetail.finalPrice || 0)}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Batting Hand</span>
+                    <div className="font-medium">{(playerDetail as any).battingHand || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Bowling Hand</span>
+                    <div className="font-medium">{(playerDetail as any).bowlingHand || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Matches</span>
+                    <div className="font-medium">{playerDetail.matches ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Runs</span>
+                    <div className="font-medium">{playerDetail.runs ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Avg</span>
+                    <div className="font-medium">{playerDetail.battingAvg ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Strike Rate</span>
+                    <div className="font-medium">{playerDetail.strikeRate ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Overs</span>
+                    <div className="font-medium">{playerDetail.overs ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Wickets</span>
+                    <div className="font-medium">{playerDetail.wickets ?? '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Economy Rate</span>
+                    <div className="font-medium">{playerDetail.economy ?? '-'}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

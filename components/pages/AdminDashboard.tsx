@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { PageType } from '@/components/Router';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { auctionService, teamService, playerService, Team } from '../../lib/firebaseServices';
+import { auctionService, teamService, playerService, Team, Player } from '../../lib/firebaseServices';
 import { toast } from 'sonner';
 import {
   Users,
@@ -19,9 +19,11 @@ import {
   Upload,
   BarChart3,
   Play,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react';
 import { formatCurrency } from '../../src/utils';
+import * as XLSX from 'xlsx';
 
 interface AdminDashboardProps {
   onNavigate: (page: PageType) => void;
@@ -36,6 +38,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingRound, setLoadingRound] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState({
     totalPlayers: 0,
     totalTeams: 0,
@@ -306,6 +309,23 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     <div className="flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       <div className="flex space-x-2">
+        <Button 
+          variant="outline"
+          onClick={(e) => { e.preventDefault(); handleExportPlayersXlsx(); }}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 mr-2" />
+              Export Players (XLSX)
+            </>
+          )}
+        </Button>
         {!currentRound && (
           <Button 
             onClick={(e) => {
@@ -353,8 +373,63 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       </div>
     </div>
   );
-  
 
+  async function handleExportPlayersXlsx() {
+    try {
+      setExporting(true);
+      const [teamsData, playersData] = await Promise.all([
+        teamService.getAllTeams(),
+        playerService.getAllPlayers()
+      ]);
+
+      const wb = XLSX.utils.book_new();
+
+      const sanitizeName = (name: string) => name.replace(/[\\/?*\[\]:]/g, '').slice(0, 31);
+
+      const toRows = (list: Player[]) => list.map(p => ({
+        Name: p.name,
+        Role: p.role,
+        Team: teamsData.find(t => t.id === p.teamId)?.name || '',
+        BasePrice: p.basePrice || 0,
+        FinalPrice: p.finalPrice ?? '',
+        Status: p.status || '',
+        Matches: p.matches ?? '',
+        Runs: p.runs ?? '',
+        Wickets: p.wickets ?? '',
+        BattingAvg: p.battingAvg ?? '',
+        StrikeRate: p.strikeRate ?? '',
+        Economy: p.economy ?? '',
+        Overs: p.overs ?? '',
+        BattingHand: p.battingHand ?? '',
+        BowlingHand: p.bowlingHand ?? ''
+      }));
+
+      // Team-wise sheets
+      for (const team of teamsData) {
+        const teamPlayers = playersData.filter(p => p.teamId === team.id);
+        const ws = XLSX.utils.json_to_sheet(toRows(teamPlayers));
+        XLSX.utils.book_append_sheet(wb, ws, sanitizeName(team.name || 'Team'));
+      }
+
+      // Combined sheet for Available (active/pending) and Inactive (unsold/inactive)
+      const availInactivePlayers = playersData.filter(p => 
+        p.status === 'active' || 
+        p.status === 'pending' || 
+        p.status === 'unsold' || 
+        (p.status as any) === 'inactive'
+      );
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(availInactivePlayers)), 'Available & Inactive');
+
+      const filename = `TPL-Players-${new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      toast.success('Player list exported successfully');
+    } catch (error) {
+      console.error('Failed to export players:', error);
+      toast.error('Failed to export players');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <MainLayout currentPage="dashboard" onNavigate={onNavigate}>

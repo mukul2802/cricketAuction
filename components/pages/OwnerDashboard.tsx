@@ -22,6 +22,7 @@ import {
   Target,
   Zap
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface OwnerDashboardProps {
   onNavigate: (page: PageType) => void;
@@ -32,6 +33,8 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
   const [myPlayers, setMyPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<AuctionRound | null>(null);
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [playerDetail, setPlayerDetail] = useState<Player | null>(null);
   
   // Find the team owned by the current user (memoized to prevent re-renders)
   const myTeam = useMemo(() => teams.find(team => team.ownerId === user?.id), [teams, user?.id]);
@@ -238,7 +241,16 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                            />
                         </div>
                         <div>
-                          <p className="font-medium">{player.name}</p>
+                          <p
+                            className="font-medium hover:underline cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPlayerDetail(player);
+                              setShowPlayerModal(true);
+                            }}
+                          >
+                            {player.name}
+                          </p>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className={getRoleColor(player.role)}>
                               {player.role}
@@ -284,11 +296,24 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                 {targetPlayersData.map((target) => (
                   <div key={target.id} className="flex items-center justify-between p-3 bg-card/50 rounded-lg border">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Star className="w-5 h-5 text-primary" />
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                        <ImageWithFallback
+                          src={target.player.image || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=100&h=100&fit=crop&crop=face'}
+                          alt={target.player.name}
+                          className="w-full h-full rounded-full object-cover object-top"
+                        />
                       </div>
                       <div>
-                        <div className="font-medium">{target.player.name}</div>
+                        <div
+                          className="font-medium hover:underline cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPlayerDetail(target.player);
+                            setShowPlayerModal(true);
+                          }}
+                        >
+                          {target.player.name}
+                        </div>
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
                           <Badge variant="outline" className={getRoleColor(target.player.role)}>
                             {target.player.role}
@@ -298,9 +323,6 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium">
-                        {(((target.player.battingAvg || 0) + (target.player.bowlingAvg || 0)) / 20 || 7.5).toFixed(1)}/10
-                      </div>
                       <Badge variant="outline" className={getPriorityColor(target.priority)}>
                         {target.priority}
                       </Badge>
@@ -353,6 +375,86 @@ export const OwnerDashboard = React.memo(function OwnerDashboard({ onNavigate }:
           </CardContent>
         </Card>
       </div>
+      {/* Player Details Dialog */}
+      <Dialog open={showPlayerModal} onOpenChange={setShowPlayerModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              {playerDetail?.name || 'Player Details'}
+            </DialogTitle>
+            <DialogDescription>Complete player statistics</DialogDescription>
+          </DialogHeader>
+          {playerDetail && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1 flex items-start">
+                {playerDetail.image ? (
+                  <ImageWithFallback
+                    src={playerDetail.image}
+                    alt={playerDetail.name}
+                    className="w-full h-full rounded-lg object-cover object-top"
+                    enhancedClassName="w-40 h-40 rounded-lg overflow-hidden"
+                  />
+                ) : (
+                  <div className="w-40 h-40 bg-primary/20 rounded-lg flex items-center justify-center">
+                    <Users className="w-10 h-10 text-primary" />
+                  </div>
+                )}
+              </div>
+              <div className="md:col-span-2 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Role</span>
+                  <div className="font-medium">{playerDetail.role || '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Base Price</span>
+                  <div className="font-medium">{formatCurrency(playerDetail.basePrice || 0)}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Final Price</span>
+                  <div className="font-medium">{formatCurrency(playerDetail.finalPrice || 0)}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Batting Hand</span>
+                  <div className="font-medium">{(playerDetail as any).battingHand || '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Bowling Hand</span>
+                  <div className="font-medium">{(playerDetail as any).bowlingHand || '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Matches</span>
+                  <div className="font-medium">{playerDetail.matches ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Runs</span>
+                  <div className="font-medium">{playerDetail.runs ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Avg</span>
+                  <div className="font-medium">{playerDetail.battingAvg ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Strike Rate</span>
+                  <div className="font-medium">{playerDetail.strikeRate ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Overs</span>
+                  <div className="font-medium">{playerDetail.overs ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Wickets</span>
+                  <div className="font-medium">{playerDetail.wickets ?? '-'}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Economy Rate</span>
+                  <div className="font-medium">{playerDetail.economy ?? '-'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 });
