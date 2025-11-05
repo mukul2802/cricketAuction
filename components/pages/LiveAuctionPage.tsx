@@ -1506,7 +1506,7 @@ export const LiveAuctionPage = React.memo(function LiveAuctionPage({ onNavigate 
         </div>
 
         {/* Main Auction Content */}
-        <div className={`flex items-center justify-center px-8 pb-8 ${user?.role === 'admin' ? 'pt-48' : 'pt-28'}`}>
+        <div className="min-h-screen flex items-center justify-center px-8">
           <div className="max-w-6xl w-full">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
               

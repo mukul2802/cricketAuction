@@ -146,7 +146,7 @@ export const OpenAuctionDisplay = React.memo(function OpenAuctionDisplay() {
       </div>
 
       {/* Main Auction Content */}
-      <div className="flex items-center justify-center px-8 pt-24 pb-8">
+      <div className="min-h-screen flex items-center justify-center px-8">
         {loading ? (
           <div className="text-center text-white">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>

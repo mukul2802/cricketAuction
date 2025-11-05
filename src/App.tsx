@@ -4,20 +4,33 @@ import { Router } from './components/Router';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { PublicAuctionPage } from './components/pages/PublicAuctionPage';
+import { PublicSquadsPage } from './components/pages/PublicSquadsPage';
 
 function AppContent() {
   const { loading } = useAuth();
   
-  // Check if this is the public auction route
+  // Check if this is a public route
   const isPublicAuction = window.location.pathname === '/public-auction' || 
                           window.location.hash === '#/public-auction' ||
                           window.location.search.includes('display=auction');
+  const isPublicSquads = window.location.pathname === '/public-squads' ||
+                         window.location.hash === '#/public-squads' ||
+                         window.location.search.includes('display=squads');
   
-  // For public auction, don't show loading and don't require auth
+  // For public pages, don't show loading and don't require auth
   if (isPublicAuction) {
     return (
       <>
         <PublicAuctionPage />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (isPublicSquads) {
+    return (
+      <>
+        <PublicSquadsPage />
         <Toaster />
       </>
     );
