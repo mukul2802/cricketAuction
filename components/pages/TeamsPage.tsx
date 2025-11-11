@@ -17,9 +17,10 @@ import {
   Plus,
   Edit,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  XIcon
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -449,81 +450,94 @@ export function TeamsPage({ onNavigate }: TeamsPageProps) {
         />
 
         <Dialog open={showSquadModal} onOpenChange={setShowSquadModal}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-primary" />
-                {selectedTeam?.name} Squad
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Players List */}
-              <div className="space-y-3">
-                {squadPlayers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">No players in this squad yet</p>
-                  </div>
+          <DialogContent showClose={false} className="max-w-4xl h-[85vh] grid-rows-[auto,1fr] overflow-hidden">
+            <DialogHeader className="flex flex-row items-center justify-between w-full">
+              <div className="flex items-center gap-3 min-w-0">
+                {selectedTeam?.logo ? (
+                  <ImageWithFallback
+                    src={selectedTeam.logo}
+                    alt={`${selectedTeam.name} logo`}
+                    className="w-full h-full rounded-full object-cover"
+                    enhancedClassName="w-8 h-8 rounded-full overflow-hidden"
+                  />
                 ) : (
-                  <div className="grid gap-3">
-                    {squadPlayers.map((player) => {
-                      const getRoleColor = (role: string) => {
-                        switch (role.toLowerCase()) {
-                          case 'batsman': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
-                          case 'bowler': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-                          case 'wicket-keeper': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
-                          case 'all-rounder': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-                          default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-                        }
-                      };
-
-                      return (
-                        <div key={player.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
-                          <div className="flex items-center gap-4">
-                            {player.image ? (
-                              <ImageWithFallback
-                                src={player.image}
-                                alt={player.name}
-                                className="w-full h-full rounded-full object-cover object-top"
-                                enhancedClassName="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                                <Users className="w-6 h-6 text-primary" />
-                              </div>
-                            )}
-                            <div>
-                              <h5
-                                className="font-medium hover:underline cursor-pointer"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setPlayerDetail(player);
-                                  setShowPlayerModal(true);
-                                }}
-                              >
-                                {player.name}
-                              </h5>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className={`text-xs ${getRoleColor(player.role)}`}>
-                                   {player.role}
-                                 </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-primary">
-                              {formatCurrency(player.finalPrice || 0)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Base: {formatCurrency(player.basePrice || 0)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <Trophy className="w-6 h-6 text-primary" />
                 )}
+                <DialogTitle className="truncate">{selectedTeam?.name} Squad</DialogTitle>
               </div>
+              <DialogClose className="rounded-md p-2 hover:bg-muted text-muted-foreground">
+                <XIcon className="w-5 h-5" />
+                <span className="sr-only">Close</span>
+              </DialogClose>
+            </DialogHeader>
+            <div className="space-y-4 flex flex-col h-full min-h-0">
+              {/* Players List */}
+             <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+                 {squadPlayers.length === 0 ? (
+                   <div className="text-center py-8">
+                     <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                     <p className="text-muted-foreground">No players in this squad yet</p>
+                   </div>
+                 ) : (
+                   <div className="grid gap-3">
+                     {squadPlayers.map((player) => {
+                       const getRoleColor = (role: string) => {
+                         switch (role.toLowerCase()) {
+                           case 'batsman': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+                           case 'bowler': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                           case 'wicket-keeper': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+                           case 'all-rounder': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                           default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+                         }
+                       };
+
+                       return (
+                         <div key={player.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                           <div className="flex items-center gap-4">
+                             {player.image ? (
+                               <ImageWithFallback
+                                 src={player.image}
+                                 alt={player.name}
+                                 className="w-full h-full rounded-full object-cover object-top"
+                                 enhancedClassName="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
+                               />
+                             ) : (
+                               <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                                 <Users className="w-6 h-6 text-primary" />
+                               </div>
+                             )}
+                             <div>
+                               <h5
+                                 className="font-medium hover:underline cursor-pointer"
+                                 onClick={(e) => {
+                                   e.preventDefault();
+                                   setPlayerDetail(player);
+                                   setShowPlayerModal(true);
+                                 }}
+                               >
+                                 {player.name}
+                               </h5>
+                               <div className="flex items-center gap-2 mt-1">
+                                 <Badge variant="outline" className={`text-xs ${getRoleColor(player.role)}`}>
+                                    {player.role}
+                                  </Badge>
+                               </div>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <div className="font-bold text-primary">
+                               {formatCurrency(player.finalPrice || 0)}
+                             </div>
+                             <div className="text-xs text-muted-foreground">
+                               Base: {formatCurrency(player.basePrice || 0)}
+                             </div>
+                           </div>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 )}
+               </div>
             </div>
           </DialogContent>
         </Dialog>

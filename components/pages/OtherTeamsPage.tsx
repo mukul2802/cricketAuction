@@ -216,6 +216,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                     Key Players ({playersData.filter(p => team.players && team.players.includes(p.id)).length})
                   </h4>
                   
+                  <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
                   {playersData
                     .filter(player => team.players && team.players.includes(player.id))
                     .map((player) => (
@@ -244,6 +245,7 @@ export function OtherTeamsPage({ onNavigate }: OtherTeamsPageProps) {
                       </div>
                     </div>
                   ))}
+                  </div>
                   
                   {playersData.filter(p => team.players && team.players.includes(p.id)).length === 0 && (
                     <div className="text-center py-4">

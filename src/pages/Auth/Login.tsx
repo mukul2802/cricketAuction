@@ -131,7 +131,7 @@ export function LoginPage() {
         </Card>
 
         {/* Demo Accounts */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Demo Account</CardTitle>
             <CardDescription>
@@ -167,7 +167,7 @@ export function LoginPage() {
               Create Admin in DB
             </Button>
           </CardFooter>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );
